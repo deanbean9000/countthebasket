@@ -1,0 +1,23 @@
+{
+  "name": "countthebasket",
+  "version": "1.0.0",
+  "description": "Count the basket Senior Project website",
+  "homepage": "https://github.com/deanbean9000/countthebasket#readme",
+  "bugs": {
+    "url": "https://github.com/deanbean9000/countthebasket/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deanbean9000/countthebasket.git"
+  },
+  "license": "ISC",
+  "author": "Ryan Dean",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "runcountthebasket"
+  },
+  "dependencies": {
+    "mongodb": "^7.1.0"
+  }
+}
