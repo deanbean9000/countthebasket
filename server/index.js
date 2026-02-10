@@ -1,8 +1,11 @@
 import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
+import { testDbConnection } from './db.js';
 
-dotenv.config();
+
 
 const app = express();
 const PORT = 3001;
@@ -16,4 +19,6 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
+  // Test database connectivity on startup without crashing the server
+  testDbConnection();
 });
