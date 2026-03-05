@@ -8,6 +8,7 @@ function RosterSetup({ onStartGame }) {
   const [homePlayers, setHomePlayers] = useState([]);
   const [awayPlayers, setAwayPlayers] = useState([]);
   const [savedRosters, setSavedRosters] = useState([]);
+  const [rosterError, setRosterError] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('Home');
@@ -22,13 +23,14 @@ function RosterSetup({ onStartGame }) {
 
   const fetchSavedRosters = async () => {
     try {
-      // Testing the connection first
+      setRosterError('');
       const response = await fetch(`${API_URL}/api/rosters`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setSavedRosters(data);
     } catch (error) {
       console.error('Error fetching rosters:', error);
+      setRosterError('Could not load saved rosters. Make sure backend server is running on port 3001.');
     }
   };
 
@@ -129,6 +131,62 @@ function RosterSetup({ onStartGame }) {
     }
   };
 
+  const startGameWithRosterData = async (roster) => {
+    if (!roster?.players?.length) {
+      alert('This roster has no players.');
+      return;
+    }
+
+    const hasHome = roster.players.some(p => p.team === 'Home');
+    const hasAway = roster.players.some(p => p.team === 'Away');
+
+    if (!hasHome || !hasAway) {
+      alert('Saved roster must include at least one Home and one Away player.');
+      return;
+    }
+
+    try {
+      const allPlayers = roster.players.map(p => ({
+        name: p.name,
+        number: p.number,
+        team: p.team,
+        points: 0,
+        rebounds: 0,
+        offensiveRebounds: 0,
+        defensiveRebounds: 0
+      }));
+
+      const response = await fetch(`${API_URL}/api/players/load-roster`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ players: allPlayers })
+      });
+
+      if (response.ok) {
+        onStartGame({
+          homeTeamName: roster.homeTeamName || 'Home',
+          awayTeamName: roster.awayTeamName || 'Away'
+        });
+      }
+    } catch (error) {
+      alert('Server connection failed. Check your Backend terminal.');
+    }
+  };
+
+  const quickStartSavedRoster = async (rosterId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/rosters/${rosterId}`);
+      if (!response.ok) {
+        throw new Error('Roster not found');
+      }
+      const roster = await response.json();
+      await startGameWithRosterData(roster);
+    } catch (error) {
+      console.error('Error starting saved roster:', error);
+      alert('Could not start this saved roster.');
+    }
+  };
+
   const deleteRoster = async (rosterId) => {
     if (!confirm('Are you sure you want to delete this roster?')) return;
     try {
@@ -146,23 +204,11 @@ function RosterSetup({ onStartGame }) {
     }
 
     try {
-      const allPlayers = [...homePlayers, ...awayPlayers].map(p => ({
-        ...p,
-        points: 0,
-        rebounds: 0,
-        offensiveRebounds: 0,
-        defensiveRebounds: 0
-      }));
-
-      const response = await fetch(`${API_URL}/api/players/load-roster`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ players: allPlayers })
+      await startGameWithRosterData({
+        homeTeamName,
+        awayTeamName,
+        players: [...homePlayers, ...awayPlayers]
       });
-
-      if (response.ok) {
-        onStartGame();
-      }
     } catch (error) {
       alert('Server connection failed. Check your Backend terminal.');
     }
@@ -172,7 +218,7 @@ function RosterSetup({ onStartGame }) {
     <div className="roster-setup">
       <h1>🏀 Roster Setup</h1>
       <div className="setup-container">
-        <div className="setup-section">
+        <div className="setup-section create-section">
           <h2>Create Roster</h2>
           <div className="form-group">
             <label>Roster Name:</label>
@@ -225,19 +271,30 @@ function RosterSetup({ onStartGame }) {
             <button onClick={startGame} className="btn-start">Start Game</button>
           </div>
         </div>
-        <div className="setup-section">
-          <h2>Saved Rosters</h2>
+        <aside className="setup-section saved-rosters-side">
+          <div className="saved-side-header">
+            <h2>Quick Start Saved Rosters</h2>
+            <button onClick={fetchSavedRosters} className="btn-refresh">Refresh</button>
+          </div>
+          {rosterError && <p className="roster-error">{rosterError}</p>}
           <div className="saved-rosters-list">
             {savedRosters.length === 0 ? <p>No saved rosters yet</p> : 
               savedRosters.map(r => (
                 <div key={r._id} className="saved-roster-item">
-                  <span>{r.name}</span>
-                  <button onClick={() => loadRoster(r._id)}>Load</button>
+                  <div className="roster-info">
+                    <h4>{r.name}</h4>
+                    <p>{r.homeTeamName || 'Home'} vs {r.awayTeamName || 'Away'}</p>
+                  </div>
+                  <div className="roster-actions">
+                    <button onClick={() => quickStartSavedRoster(r._id)} className="btn-load">Start</button>
+                    <button onClick={() => loadRoster(r._id)} className="btn-load">Edit</button>
+                    <button onClick={() => deleteRoster(r._id)} className="btn-delete">Delete</button>
+                  </div>
                 </div>
               ))
             }
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

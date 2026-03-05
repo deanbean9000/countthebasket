@@ -5,17 +5,17 @@ import RosterSetup from './RosterSetup';
 function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [players, setPlayers] = useState([]);
+  const [homeTeamName, setHomeTeamName] = useState('Home');
+  const [awayTeamName, setAwayTeamName] = useState('Away');
   const [step, setStep] = useState('number'); 
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [prompt, setPrompt] = useState('Enter player number:');
   const inputRef = useRef(null);
 
-  // --- CODESPACES FIX START ---
-  // This automatically detects your Codespace URL and points to port 3001
-  const API_URL = import.meta.env.VITE_API_URL || 
-                  window.location.origin.replace('-5173', '-3001');
-  // --- CODESPACES FIX END ---
+  // --- CODESPACES CONNECTION FIX ---
+  // This detects your current URL and forces it to point to the backend port 3001
+  const API_URL = window.location.origin.replace('-5173', '-3001');
 
   useEffect(() => {
     if (gameStarted) {
@@ -24,6 +24,7 @@ function App() {
   }, [gameStarted]);
 
   useEffect(() => {
+    // Auto-focus input on every step change
     if (inputRef.current) {
       inputRef.current.focus();
     }
@@ -31,7 +32,7 @@ function App() {
 
   const fetchPlayers = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/players`); // Fixed URL
+      const response = await fetch(`${API_URL}/api/players`);
       const data = await response.json();
       setPlayers(data);
     } catch (error) {
@@ -51,6 +52,7 @@ function App() {
 
     if (e.key === 'Enter') {
       if (step === 'number') {
+        // Find player by number
         const player = players.find(p => p.number === parseInt(input));
         if (player) {
           setSelectedPlayer(player);
@@ -101,6 +103,7 @@ function App() {
       }
     }
 
+    // ESC to cancel/reset
     if (e.key === 'Escape') {
       e.target.value = '';
       resetFlow();
@@ -109,7 +112,7 @@ function App() {
 
   const addPoints = async (playerId, pointsToAdd) => {
     try {
-      await fetch(`${API_URL}/api/players/${playerId}/score`, { // Fixed URL
+      await fetch(`${API_URL}/api/players/${playerId}/score`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pointsToAdd })
@@ -122,7 +125,7 @@ function App() {
 
   const addRebound = async (playerId, type) => {
     try {
-      await fetch(`${API_URL}/api/players/${playerId}/rebound`, { // Fixed URL
+      await fetch(`${API_URL}/api/players/${playerId}/rebound`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type })
@@ -149,18 +152,27 @@ function App() {
   const endGame = () => {
     setGameStarted(false);
     setPlayers([]);
+    setHomeTeamName('Home');
+    setAwayTeamName('Away');
     resetFlow();
   };
 
+  const handleStartGame = (config = {}) => {
+    setHomeTeamName(config.homeTeamName || 'Home');
+    setAwayTeamName(config.awayTeamName || 'Away');
+    setGameStarted(true);
+  };
+
+  // Show roster setup screen if game hasn't started
   if (!gameStarted) {
-    return <RosterSetup onStartGame={() => setGameStarted(true)} />;
+    return <RosterSetup onStartGame={handleStartGame} />;
   }
 
   return (
     <div className="app">
       <header className="scoreboard-header">
         <div className="team-score">
-          <h2>Home</h2>
+          <h2>{homeTeamName}</h2>
           <div className="score">{homeStats.points}</div>
         </div>
         <div className="game-title">
@@ -168,7 +180,7 @@ function App() {
           <button onClick={endGame} className="btn-end-game">End Game</button>
         </div>
         <div className="team-score">
-          <h2>Away</h2>
+          <h2>{awayTeamName}</h2>
           <div className="score">{awayStats.points}</div>
         </div>
       </header>
@@ -176,7 +188,7 @@ function App() {
       <div className="main-layout">
         <aside className="roster-sidebar">
           <div className="roster-section">
-            <h3 className="roster-title">Home Roster</h3>
+            <h3 className="roster-title">{homeTeamName} Roster</h3>
             <div className="roster-list">
               {players
                 .filter(p => p.team === 'Home')
@@ -189,7 +201,7 @@ function App() {
             </div>
           </div>
           <div className="roster-section">
-            <h3 className="roster-title">Away Roster</h3>
+            <h3 className="roster-title">{awayTeamName} Roster</h3>
             <div className="roster-list">
               {players
                 .filter(p => p.team === 'Away')
@@ -220,7 +232,7 @@ function App() {
           <div className="teams-container">
             <div className="team-column">
               <h2 className="team-header">
-                Home Team
+                {homeTeamName}
                 <span className="team-stats">
                   {homeStats.points} pts | {homeStats.rebounds} reb ({homeStats.offensive}O/{homeStats.defensive}D)
                 </span>
@@ -245,7 +257,7 @@ function App() {
 
             <div className="team-column">
               <h2 className="team-header">
-                Away Team
+                {awayTeamName}
                 <span className="team-stats">
                   {awayStats.points} pts | {awayStats.rebounds} reb ({awayStats.offensive}O/{awayStats.defensive}D)
                 </span>

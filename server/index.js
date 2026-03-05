@@ -75,17 +75,6 @@ app.post('/api/players/reset', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-// This is needed to save the rosters you create in RosterSetup.jsx
-app.post('/api/rosters', async (req, res) => {
-  try {
-    // If you haven't created a Roster model yet, you can use a generic collection 
-    // or I can help you define the Roster Schema.
-    console.log("Roster data received:", req.body);
-    res.status(201).json({ message: "Roster received by server!" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
 // Clear all players and load a new roster
 app.post('/api/players/load-roster', async (req, res) => {
   const { players } = req.body;
@@ -156,4 +145,10 @@ app.get('/api/items', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001; // Render will tell the server which port to use
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+const startServer = async () => {
+  await testDbConnection();
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+};
+
+startServer();

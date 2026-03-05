@@ -17,7 +17,7 @@
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: 30px;
 }
 
@@ -27,6 +27,41 @@
   padding: 30px;
   border-radius: 15px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.saved-rosters-side {
+  position: sticky;
+  top: 20px;
+  height: fit-content;
+}
+
+.saved-side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.btn-refresh {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #1b6ef3;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-refresh:hover {
+  background: #0f57ca;
+}
+
+.roster-error {
+  margin: 10px 0 15px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(244, 67, 54, 0.2);
+  color: #ffe6e6;
 }
 
 .setup-section h2 {
@@ -232,6 +267,14 @@
   transition: all 0.2s;
 }
 
+.saved-roster-item .btn-load:first-child {
+  background: #ff6b35;
+}
+
+.saved-roster-item .btn-load:first-child:hover {
+  background: #e65a2a;
+}
+
 .saved-roster-item:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateX(5px);
@@ -304,6 +347,10 @@
 @media (max-width: 1024px) {
   .setup-container {
     grid-template-columns: 1fr;
+  }
+
+  .saved-rosters-side {
+    position: static;
   }
 
   .form-row {
