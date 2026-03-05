@@ -12,13 +12,17 @@ function RosterSetup({ onStartGame }) {
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('Home');
 
+  // --- CODESPACES URL FIX ---
+  const API_URL = import.meta.env.VITE_API_URL || 
+                  window.location.origin.replace('-5173', '-3001');
+
   useEffect(() => {
     fetchSavedRosters();
   }, []);
 
   const fetchSavedRosters = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/rosters');
+      const response = await fetch(`${API_URL}/api/rosters`);
       const data = await response.json();
       setSavedRosters(data);
     } catch (error) {
@@ -82,16 +86,14 @@ function RosterSetup({ onStartGame }) {
         awayTeamName,
         players: [...homePlayers, ...awayPlayers]
       };
-      console.log('Saving roster:', rosterData);
 
-      const response = await fetch('http://localhost:3001/api/rosters', {
+      const response = await fetch(`${API_URL}/api/rosters`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rosterData)
       });
 
       const responseData = await response.json();
-      console.log('Server response:', responseData);
 
       if (response.ok) {
         alert('Roster saved successfully!');
@@ -101,13 +103,13 @@ function RosterSetup({ onStartGame }) {
       }
     } catch (error) {
       console.error('Error saving roster:', error);
-      alert(`Error saving roster: ${error.message}. Make sure the server is running!`);
+      alert(`Error saving roster. Make sure the server is running and port 3001 is Public!`);
     }
   };
 
   const loadRoster = async (rosterId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/rosters/${rosterId}`);
+      const response = await fetch(`${API_URL}/api/rosters/${rosterId}`);
       const roster = await response.json();
       
       setRosterName(roster.name);
@@ -124,7 +126,7 @@ function RosterSetup({ onStartGame }) {
     if (!confirm('Are you sure you want to delete this roster?')) return;
 
     try {
-      await fetch(`http://localhost:3001/api/rosters/${rosterId}`, {
+      await fetch(`${API_URL}/api/rosters/${rosterId}`, {
         method: 'DELETE'
       });
       fetchSavedRosters();
@@ -140,7 +142,6 @@ function RosterSetup({ onStartGame }) {
     }
 
     try {
-      // Load players into the game
       const allPlayers = [...homePlayers, ...awayPlayers].map(p => ({
         ...p,
         points: 0,
@@ -149,7 +150,7 @@ function RosterSetup({ onStartGame }) {
         defensiveRebounds: 0
       }));
 
-      const response = await fetch('http://localhost:3001/api/players/load-roster', {
+      const response = await fetch(`${API_URL}/api/players/load-roster`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ players: allPlayers })
@@ -160,19 +161,16 @@ function RosterSetup({ onStartGame }) {
       }
     } catch (error) {
       console.error('Error starting game:', error);
-      alert('Error starting game');
+      alert('Error starting game. Check your server console.');
     }
   };
 
   return (
     <div className="roster-setup">
       <h1>🏀 Roster Setup</h1>
-
       <div className="setup-container">
-        {/* Left: Add Players */}
         <div className="setup-section">
           <h2>Create Roster</h2>
-          
           <div className="form-group">
             <label>Roster Name:</label>
             <input
@@ -182,26 +180,16 @@ function RosterSetup({ onStartGame }) {
               placeholder="e.g., Warriors vs Lakers"
             />
           </div>
-
           <div className="team-names">
             <div className="form-group">
               <label>Home Team:</label>
-              <input
-                type="text"
-                value={homeTeamName}
-                onChange={(e) => setHomeTeamName(e.target.value)}
-              />
+              <input type="text" value={homeTeamName} onChange={(e) => setHomeTeamName(e.target.value)} />
             </div>
             <div className="form-group">
               <label>Away Team:</label>
-              <input
-                type="text"
-                value={awayTeamName}
-                onChange={(e) => setAwayTeamName(e.target.value)}
-              />
+              <input type="text" value={awayTeamName} onChange={(e) => setAwayTeamName(e.target.value)} />
             </div>
           </div>
-
           <div className="add-player-form">
             <h3>Add Player</h3>
             <div className="form-row">
@@ -209,25 +197,11 @@ function RosterSetup({ onStartGame }) {
                 <option value="Home">{homeTeamName}</option>
                 <option value="Away">{awayTeamName}</option>
               </select>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Player Name"
-              />
-              <input
-                type="number"
-                value={playerNumber}
-                onChange={(e) => setPlayerNumber(e.target.value)}
-                placeholder="#"
-                min="0"
-                max="99"
-              />
+              <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Player Name" />
+              <input type="number" value={playerNumber} onChange={(e) => setPlayerNumber(e.target.value)} placeholder="#" />
               <button onClick={addPlayer} className="btn-add">Add</button>
             </div>
           </div>
-
-          {/* Display Current Roster */}
           <div className="current-roster">
             <div className="team-roster">
               <h3>{homeTeamName} ({homePlayers.length})</h3>
@@ -248,20 +222,15 @@ function RosterSetup({ onStartGame }) {
               ))}
             </div>
           </div>
-
           <div className="action-buttons">
             <button onClick={saveRoster} className="btn-save">Save Roster</button>
             <button onClick={startGame} className="btn-start">Start Game</button>
           </div>
         </div>
-
-        {/* Right: Saved Rosters */}
         <div className="setup-section">
           <h2>Saved Rosters</h2>
           <div className="saved-rosters-list">
-            {savedRosters.length === 0 ? (
-              <p className="empty-message">No saved rosters yet</p>
-            ) : (
+            {savedRosters.length === 0 ? <p className="empty-message">No saved rosters yet</p> : 
               savedRosters.map(roster => (
                 <div key={roster._id} className="saved-roster-item">
                   <div className="roster-info">
@@ -274,7 +243,7 @@ function RosterSetup({ onStartGame }) {
                   </div>
                 </div>
               ))
-            )}
+            }
           </div>
         </div>
       </div>

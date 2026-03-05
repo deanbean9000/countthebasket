@@ -6,9 +6,7 @@ import Player from './models/Player.js';
 import Roster from './models/Roster.js';
 
 const app = express();
-app.use(cors({
-  origin: 'https://countthebasket-1.onrender.com' 
-}));
+app.use(cors());
 app.use(express.json());
 
 // Get all players
@@ -77,7 +75,17 @@ app.post('/api/players/reset', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
+// This is needed to save the rosters you create in RosterSetup.jsx
+app.post('/api/rosters', async (req, res) => {
+  try {
+    // If you haven't created a Roster model yet, you can use a generic collection 
+    // or I can help you define the Roster Schema.
+    console.log("Roster data received:", req.body);
+    res.status(201).json({ message: "Roster received by server!" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 // Clear all players and load a new roster
 app.post('/api/players/load-roster', async (req, res) => {
   const { players } = req.body;

@@ -5,11 +5,17 @@ import RosterSetup from './RosterSetup';
 function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [players, setPlayers] = useState([]);
-  const [step, setStep] = useState('number'); // 'number', 'action', 'points', 'rebounds'
+  const [step, setStep] = useState('number'); 
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [prompt, setPrompt] = useState('Enter player number:');
   const inputRef = useRef(null);
+
+  // --- CODESPACES FIX START ---
+  // This automatically detects your Codespace URL and points to port 3001
+  const API_URL = import.meta.env.VITE_API_URL || 
+                  window.location.origin.replace('-5173', '-3001');
+  // --- CODESPACES FIX END ---
 
   useEffect(() => {
     if (gameStarted) {
@@ -18,18 +24,14 @@ function App() {
   }, [gameStarted]);
 
   useEffect(() => {
-    // Auto-focus input on every step change
     if (inputRef.current) {
       inputRef.current.focus();
     }
   }, [step]);
-  
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-fetch(`${API_URL}/api/players`)
 
   const fetchPlayers = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/players');
+      const response = await fetch(`${API_URL}/api/players`); // Fixed URL
       const data = await response.json();
       setPlayers(data);
     } catch (error) {
@@ -49,7 +51,6 @@ fetch(`${API_URL}/api/players`)
 
     if (e.key === 'Enter') {
       if (step === 'number') {
-        // Find player by number
         const player = players.find(p => p.number === parseInt(input));
         if (player) {
           setSelectedPlayer(player);
@@ -100,7 +101,6 @@ fetch(`${API_URL}/api/players`)
       }
     }
 
-    // ESC to cancel/reset
     if (e.key === 'Escape') {
       e.target.value = '';
       resetFlow();
@@ -109,7 +109,7 @@ fetch(`${API_URL}/api/players`)
 
   const addPoints = async (playerId, pointsToAdd) => {
     try {
-      await fetch(`http://localhost:3001/api/players/${playerId}/score`, {
+      await fetch(`${API_URL}/api/players/${playerId}/score`, { // Fixed URL
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pointsToAdd })
@@ -122,7 +122,7 @@ fetch(`${API_URL}/api/players`)
 
   const addRebound = async (playerId, type) => {
     try {
-      await fetch(`http://localhost:3001/api/players/${playerId}/rebound`, {
+      await fetch(`${API_URL}/api/players/${playerId}/rebound`, { // Fixed URL
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type })
@@ -152,7 +152,6 @@ fetch(`${API_URL}/api/players`)
     resetFlow();
   };
 
-  // Show roster setup screen if game hasn't started
   if (!gameStarted) {
     return <RosterSetup onStartGame={() => setGameStarted(true)} />;
   }
@@ -206,69 +205,69 @@ fetch(`${API_URL}/api/players`)
 
         <div className="main-content">
           <div className="quick-entry">
-        <div className="prompt">{prompt}</div>
-        <input
-          ref={inputRef}
-          type="text"
-          className="stat-input"
-          onKeyDown={handleKeyPress}
-          placeholder="Type here..."
-          autoFocus
-        />
-        <div className="hint">Press ESC to cancel</div>
-      </div>
+            <div className="prompt">{prompt}</div>
+            <input
+              ref={inputRef}
+              type="text"
+              className="stat-input"
+              onKeyDown={handleKeyPress}
+              placeholder="Type here..."
+              autoFocus
+            />
+            <div className="hint">Press ESC to cancel</div>
+          </div>
 
-      <div className="teams-container">
-        <div className="team-column">
-          <h2 className="team-header">
-            Home Team
-            <span className="team-stats">
-              {homeStats.points} pts | {homeStats.rebounds} reb ({homeStats.offensive}O/{homeStats.defensive}D)
-            </span>
-          </h2>
-          {players
-            .filter(p => p.team === 'Home')
-            .map(player => (
-              <div key={player._id} className="player-card">
-                <div className="player-info">
-                  <span className="player-number">#{player.number}</span>
-                  <span className="player-name">{player.name}</span>
-                </div>
-                <div className="player-stats">
-                  <span className="stat-badge points">{player.points} PTS</span>
-                  <span className="stat-badge rebounds">
-                    {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
-                  </span>
-                </div>
-              </div>
-            ))}
-        </div>
+          <div className="teams-container">
+            <div className="team-column">
+              <h2 className="team-header">
+                Home Team
+                <span className="team-stats">
+                  {homeStats.points} pts | {homeStats.rebounds} reb ({homeStats.offensive}O/{homeStats.defensive}D)
+                </span>
+              </h2>
+              {players
+                .filter(p => p.team === 'Home')
+                .map(player => (
+                  <div key={player._id} className="player-card">
+                    <div className="player-info">
+                      <span className="player-number">#{player.number}</span>
+                      <span className="player-name">{player.name}</span>
+                    </div>
+                    <div className="player-stats">
+                      <span className="stat-badge points">{player.points} PTS</span>
+                      <span className="stat-badge rebounds">
+                        {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
 
-        <div className="team-column">
-          <h2 className="team-header">
-            Away Team
-            <span className="team-stats">
-              {awayStats.points} pts | {awayStats.rebounds} reb ({awayStats.offensive}O/{awayStats.defensive}D)
-            </span>
-          </h2>
-          {players
-            .filter(p => p.team === 'Away')
-            .map(player => (
-              <div key={player._id} className="player-card">
-                <div className="player-info">
-                  <span className="player-number">#{player.number}</span>
-                  <span className="player-name">{player.name}</span>
-                </div>
-                <div className="player-stats">
-                  <span className="stat-badge points">{player.points} PTS</span>
-                  <span className="stat-badge rebounds">
-                    {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
-                  </span>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
+            <div className="team-column">
+              <h2 className="team-header">
+                Away Team
+                <span className="team-stats">
+                  {awayStats.points} pts | {awayStats.rebounds} reb ({awayStats.offensive}O/{awayStats.defensive}D)
+                </span>
+              </h2>
+              {players
+                .filter(p => p.team === 'Away')
+                .map(player => (
+                  <div key={player._id} className="player-card">
+                    <div className="player-info">
+                      <span className="player-number">#{player.number}</span>
+                      <span className="player-name">{player.name}</span>
+                    </div>
+                    <div className="player-stats">
+                      <span className="stat-badge points">{player.points} PTS</span>
+                      <span className="stat-badge rebounds">
+                        {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
