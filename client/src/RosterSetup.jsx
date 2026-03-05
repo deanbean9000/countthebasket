@@ -12,9 +12,9 @@ function RosterSetup({ onStartGame }) {
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('Home');
 
-  // --- CODESPACES URL FIX ---
-  const API_URL = import.meta.env.VITE_API_URL || 
-                  window.location.origin.replace('-5173', '-3001');
+  // --- CODESPACES CONNECTION FIX ---
+  // This detects your current URL and forces it to point to the backend port 3001
+  const API_URL = window.location.origin.replace('-5173', '-3001');
 
   useEffect(() => {
     fetchSavedRosters();
@@ -22,7 +22,9 @@ function RosterSetup({ onStartGame }) {
 
   const fetchSavedRosters = async () => {
     try {
+      // Testing the connection first
       const response = await fetch(`${API_URL}/api/rosters`);
+      if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setSavedRosters(data);
     } catch (error) {
@@ -87,6 +89,8 @@ function RosterSetup({ onStartGame }) {
         players: [...homePlayers, ...awayPlayers]
       };
 
+      console.log("Attempting to save to:", `${API_URL}/api/rosters`);
+
       const response = await fetch(`${API_URL}/api/rosters`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,11 +103,14 @@ function RosterSetup({ onStartGame }) {
         alert('Roster saved successfully!');
         fetchSavedRosters();
       } else {
-        alert(`Error saving roster: ${responseData.message || 'Unknown error'}`);
+        alert(`Error: ${responseData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error saving roster:', error);
-      alert(`Error saving roster. Make sure the server is running and port 3001 is Public!`);
+      console.error('Save error:', error);
+      alert(`Connection Refused! 
+      1. Go to the "Ports" tab in your terminal.
+      2. Ensure port 3001 is set to PUBLIC.
+      3. Ensure your backend terminal says "Server running".`);
     }
   };
 
@@ -124,11 +131,8 @@ function RosterSetup({ onStartGame }) {
 
   const deleteRoster = async (rosterId) => {
     if (!confirm('Are you sure you want to delete this roster?')) return;
-
     try {
-      await fetch(`${API_URL}/api/rosters/${rosterId}`, {
-        method: 'DELETE'
-      });
+      await fetch(`${API_URL}/api/rosters/${rosterId}`, { method: 'DELETE' });
       fetchSavedRosters();
     } catch (error) {
       console.error('Error deleting roster:', error);
@@ -137,7 +141,7 @@ function RosterSetup({ onStartGame }) {
 
   const startGame = async () => {
     if (homePlayers.length === 0 || awayPlayers.length === 0) {
-      alert('Both teams need at least one player!');
+      alert('Both teams need players!');
       return;
     }
 
@@ -160,8 +164,7 @@ function RosterSetup({ onStartGame }) {
         onStartGame();
       }
     } catch (error) {
-      console.error('Error starting game:', error);
-      alert('Error starting game. Check your server console.');
+      alert('Server connection failed. Check your Backend terminal.');
     }
   };
 
@@ -173,12 +176,7 @@ function RosterSetup({ onStartGame }) {
           <h2>Create Roster</h2>
           <div className="form-group">
             <label>Roster Name:</label>
-            <input
-              type="text"
-              value={rosterName}
-              onChange={(e) => setRosterName(e.target.value)}
-              placeholder="e.g., Warriors vs Lakers"
-            />
+            <input type="text" value={rosterName} onChange={(e) => setRosterName(e.target.value)} placeholder="e.g., Warriors vs Lakers" />
           </div>
           <div className="team-names">
             <div className="form-group">
@@ -205,7 +203,7 @@ function RosterSetup({ onStartGame }) {
           <div className="current-roster">
             <div className="team-roster">
               <h3>{homeTeamName} ({homePlayers.length})</h3>
-              {homePlayers.sort((a, b) => a.number - b.number).map(player => (
+              {homePlayers.map(player => (
                 <div key={player.number} className="player-item">
                   <span>#{player.number} {player.name}</span>
                   <button onClick={() => removePlayer('Home', player.number)}>×</button>
@@ -214,7 +212,7 @@ function RosterSetup({ onStartGame }) {
             </div>
             <div className="team-roster">
               <h3>{awayTeamName} ({awayPlayers.length})</h3>
-              {awayPlayers.sort((a, b) => a.number - b.number).map(player => (
+              {awayPlayers.map(player => (
                 <div key={player.number} className="player-item">
                   <span>#{player.number} {player.name}</span>
                   <button onClick={() => removePlayer('Away', player.number)}>×</button>
@@ -230,17 +228,11 @@ function RosterSetup({ onStartGame }) {
         <div className="setup-section">
           <h2>Saved Rosters</h2>
           <div className="saved-rosters-list">
-            {savedRosters.length === 0 ? <p className="empty-message">No saved rosters yet</p> : 
-              savedRosters.map(roster => (
-                <div key={roster._id} className="saved-roster-item">
-                  <div className="roster-info">
-                    <h4>{roster.name}</h4>
-                    <p>{roster.players.length} players</p>
-                  </div>
-                  <div className="roster-actions">
-                    <button onClick={() => loadRoster(roster._id)} className="btn-load">Load</button>
-                    <button onClick={() => deleteRoster(roster._id)} className="btn-delete">Delete</button>
-                  </div>
+            {savedRosters.length === 0 ? <p>No saved rosters yet</p> : 
+              savedRosters.map(r => (
+                <div key={r._id} className="saved-roster-item">
+                  <span>{r.name}</span>
+                  <button onClick={() => loadRoster(r._id)}>Load</button>
                 </div>
               ))
             }
