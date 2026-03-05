@@ -23,6 +23,9 @@ function App() {
       inputRef.current.focus();
     }
   }, [step]);
+  
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+fetch(`${API_URL}/api/players`)
 
   const fetchPlayers = async () => {
     try {

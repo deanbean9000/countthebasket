@@ -6,7 +6,9 @@ import Player from './models/Player.js';
 import Roster from './models/Roster.js';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://countthebasket-1.onrender.com' 
+}));
 app.use(express.json());
 
 // Get all players
@@ -145,9 +147,5 @@ app.get('/api/items', async (req, res) => {
   }
 });
 
-const PORT = 3001;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server listening on port ${PORT}`);
-  testDbConnection(); 
-});
+const PORT = process.env.PORT || 3001; // Render will tell the server which port to use
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
