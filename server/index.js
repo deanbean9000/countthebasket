@@ -6,19 +6,26 @@ import Player from './models/Player.js';
 import Roster from './models/Roster.js';
 
 const app = express();
+
+// 1. MIDDLEWARE 
+app.use(express.json()); // Moved up so all routes can read JSON data
+
 app.use(cors({
   origin: [
-    'https://countthebasket.onrender.com', // Your actual Render frontend URL
-    /\.github\.dev$/                          // This allows it to still work in Codespaces
+    'https://countthebasket.onrender.com',   // Original URL
+    'https://countthebasket-1.onrender.com', // THE NEW URL FROM YOUR ERROR
+    /\.github\.dev$/,                       // Codespaces
+    'http://localhost:5173'                 // Local testing
   ],
   credentials: true
 }));
+
+// 2. HEALTH CHECK
 app.get('/', (req, res) => {
   res.send('Count The Basket API is running! 🏀');
 });
-app.use(express.json());
 
-// Get all players
+// 3. PLAYER ROUTES
 app.get('/api/players', async (req, res) => {
   try {
     const players = await Player.find().sort({ team: 1, number: 1 });
@@ -28,13 +35,12 @@ app.get('/api/players', async (req, res) => {
   }
 });
 
-// Update player stats (e.g., adding points)
 app.patch('/api/players/:id/score', async (req, res) => {
   const { pointsToAdd } = req.body;
   try {
     const player = await Player.findByIdAndUpdate(
       req.params.id,
-      { $inc: { points: pointsToAdd } }, // $inc increment the value
+      { $inc: { points: pointsToAdd } },
       { new: true }
     );
     res.json(player);
@@ -43,19 +49,13 @@ app.patch('/api/players/:id/score', async (req, res) => {
   }
 });
 
-// Add rebounds to a player
 app.patch('/api/players/:id/rebound', async (req, res) => {
-  const { type } = req.body; // 'offensive' or 'defensive'
+  const { type } = req.body;
   try {
     const updateField = type === 'offensive' ? 'offensiveRebounds' : 'defensiveRebounds';
     const player = await Player.findByIdAndUpdate(
       req.params.id,
-      { 
-        $inc: { 
-          rebounds: 1,
-          [updateField]: 1
-        } 
-      },
+      { $inc: { rebounds: 1, [updateField]: 1 } },
       { new: true }
     );
     res.json(player);
@@ -64,33 +64,22 @@ app.patch('/api/players/:id/rebound', async (req, res) => {
   }
 });
 
-// Reset all player stats to 0
 app.post('/api/players/reset', async (req, res) => {
   try {
-    await Player.updateMany(
-      {},
-      { 
-        $set: { 
-          points: 0, 
-          rebounds: 0, 
-          offensiveRebounds: 0, 
-          defensiveRebounds: 0 
-        } 
-      }
-    );
+    await Player.updateMany({}, { 
+      $set: { points: 0, rebounds: 0, offensiveRebounds: 0, defensiveRebounds: 0 } 
+    });
     const players = await Player.find().sort({ team: 1, number: 1 });
     res.json(players);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-// Clear all players and load a new roster
+
 app.post('/api/players/load-roster', async (req, res) => {
   const { players } = req.body;
   try {
-    // Clear existing players
     await Player.deleteMany({});
-    // Add new players
     const newPlayers = await Player.insertMany(players);
     res.json(newPlayers);
   } catch (err) {
@@ -98,8 +87,7 @@ app.post('/api/players/load-roster', async (req, res) => {
   }
 });
 
-// ROSTER ENDPOINTS
-// Get all saved rosters
+// 4. ROSTER ROUTES
 app.get('/api/rosters', async (req, res) => {
   try {
     const rosters = await Roster.find().sort({ createdAt: -1 });
@@ -109,7 +97,6 @@ app.get('/api/rosters', async (req, res) => {
   }
 });
 
-// Get a single roster
 app.get('/api/rosters/:id', async (req, res) => {
   try {
     const roster = await Roster.findById(req.params.id);
@@ -119,21 +106,16 @@ app.get('/api/rosters/:id', async (req, res) => {
   }
 });
 
-// Save a new roster
 app.post('/api/rosters', async (req, res) => {
-  console.log('Received roster save request:', req.body);
-  const roster = new Roster(req.body);
   try {
+    const roster = new Roster(req.body);
     const newRoster = await roster.save();
-    console.log('Roster saved successfully:', newRoster._id);
     res.status(201).json(newRoster);
   } catch (err) {
-    console.error('Error saving roster:', err.message);
     res.status(400).json({ message: err.message });
   }
 });
 
-// Delete a roster
 app.delete('/api/rosters/:id', async (req, res) => {
   try {
     await Roster.findByIdAndDelete(req.params.id);
@@ -143,21 +125,17 @@ app.delete('/api/rosters/:id', async (req, res) => {
   }
 });
 
-// This route returns all items in the basket
-app.get('/api/items', async (req, res) => {
-  try {
-    const items = await Item.find();
-    res.json(items);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-const PORT = process.env.PORT || 3001; // Render will tell the server which port to use
+// 5. SERVER STARTUP
+const PORT = process.env.PORT || 3001;
 
 const startServer = async () => {
-  await testDbConnection();
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  try {
+    await testDbConnection();
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    process.exit(1); // Stop the server if DB fails
+  }
 };
 
 startServer();
