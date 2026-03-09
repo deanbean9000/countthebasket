@@ -15,7 +15,7 @@ function App() {
 
   // --- CODESPACES CONNECTION FIX ---
   // This detects your current URL and forces it to point to the backend port 3001
-  const API_URL = window.location.origin.replace('-5173', '-3001');
+ const API_URL = import.meta.env.VITE_API_URL || window.location.origin.replace('-5173', '-3001');
 
   useEffect(() => {
     if (gameStarted) {

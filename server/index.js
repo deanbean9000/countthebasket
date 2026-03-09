@@ -6,7 +6,16 @@ import Player from './models/Player.js';
 import Roster from './models/Roster.js';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://countthebasket.onrender.com', // Your actual Render frontend URL
+    /\.github\.dev$/                          // This allows it to still work in Codespaces
+  ],
+  credentials: true
+}));
+app.get('/', (req, res) => {
+  res.send('Count The Basket API is running! 🏀');
+});
 app.use(express.json());
 
 // Get all players
