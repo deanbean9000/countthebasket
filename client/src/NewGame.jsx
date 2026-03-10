@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './NewGame.css';
 
-function NewGame({ onStartGame, onBack }) {
+function NewGame({ leagueId, onStartGame, onBack }) {
   const [rosters, setRosters] = useState([]);
   const [homeRoster, setHomeRoster] = useState(null);
   const [guestRoster, setGuestRoster] = useState(null);
@@ -17,7 +17,7 @@ function NewGame({ onStartGame, onBack }) {
   const fetchRosters = async () => {
     try {
       setError('');
-      const res = await fetch(`${API_URL}/api/rosters`);
+      const res = await fetch(`${API_URL}/api/rosters?leagueId=${leagueId}`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setRosters(data);

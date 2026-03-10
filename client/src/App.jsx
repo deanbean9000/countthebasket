@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
+import LeagueGate from './LeagueGate';
 import Hero from './Hero';
 import RosterSetup from './RosterSetup';
 import NewGame from './NewGame';
 
 function App() {
-  // view: 'hero' | 'createRoster' | 'newGame' | 'game'
-  const [view, setView] = useState('hero');
+  // view: 'leagueGate' | 'hero' | 'createRoster' | 'newGame' | 'game'
+  const [view, setView] = useState('leagueGate');
+  const [league, setLeague] = useState(null); // { _id, name }
   const [players, setPlayers] = useState([]);
   const [homeTeamName, setHomeTeamName] = useState('Home');
   const [awayTeamName, setAwayTeamName] = useState('Away');
@@ -166,25 +168,37 @@ function App() {
     setView('game');
   };
 
+  // League gate — must enter a league first
+  if (view === 'leagueGate') {
+    return (
+      <LeagueGate
+        onEnterLeague={(l) => { setLeague(l); setView('hero'); }}
+      />
+    );
+  }
+
   // Show hero page
   if (view === 'hero') {
     return (
       <Hero
+        league={league}
         onCreateRoster={() => setView('createRoster')}
         onNewGame={() => setView('newGame')}
+        onLeaveLeague={() => { setLeague(null); setView('leagueGate'); }}
       />
     );
   }
 
   // Show create roster page
   if (view === 'createRoster') {
-    return <RosterSetup onBack={() => setView('hero')} />;
+    return <RosterSetup leagueId={league._id} onBack={() => setView('hero')} />;
   }
 
   // Show new game setup
   if (view === 'newGame') {
     return (
       <NewGame
+        leagueId={league._id}
         onStartGame={handleStartGame}
         onBack={() => setView('hero')}
       />

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './RosterSetup.css';
 
-function RosterSetup({ onBack }) {
+function RosterSetup({ leagueId, onBack }) {
   const [teamName, setTeamName] = useState('');
   const [players, setPlayers] = useState([]);
   const [playerName, setPlayerName] = useState('');
@@ -49,6 +49,7 @@ function RosterSetup({ onBack }) {
         name: teamName.trim(),
         homeTeamName: teamName.trim(),
         awayTeamName: teamName.trim(),
+        leagueId,
         players: players.map(p => ({ ...p, team: 'Home' })),
       };
 

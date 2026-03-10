@@ -1,0 +1,173 @@
+.league-gate {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.league-gate-card {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+  border-radius: 24px;
+  padding: 50px 56px;
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.league-gate-logo {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: 12px;
+  animation: gateBounce 2.4s ease-in-out infinite;
+}
+
+@keyframes gateBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+.league-gate-title {
+  font-size: 2.8rem;
+  color: #ffd700;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  margin-bottom: 6px;
+}
+
+.league-gate-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 30px;
+  letter-spacing: 0.5px;
+}
+
+/* Tabs */
+.league-tabs {
+  display: flex;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.league-tab {
+  flex: 1;
+  padding: 12px 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  border: none;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.league-tab:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.league-tab.active {
+  background: #ffd700;
+  color: #1e3c72;
+}
+
+/* Form */
+.league-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.league-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e3c72;
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.league-input:focus {
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3);
+}
+
+.key-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.key-row .league-input {
+  flex: 1;
+}
+
+.btn-eye {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.btn-eye:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.league-error {
+  background: rgba(239, 83, 80, 0.18);
+  border: 1px solid rgba(239, 83, 80, 0.5);
+  color: #ffcdd2;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.btn-league-action {
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: white;
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s;
+  margin-top: 4px;
+}
+
+.btn-league-action:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2a5298, #3a72cc);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.btn-league-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.league-hint {
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+}
+
+.league-hint strong {
+  color: rgba(255, 215, 0, 0.8);
+}

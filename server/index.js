@@ -1,9 +1,13 @@
 import express from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 import { testDbConnection } from './db.js';
 import Item from './models/Item.js';
 import Player from './models/Player.js';
 import Roster from './models/Roster.js';
+import League from './models/League.js';
+
+const hashKey = (key) => crypto.createHash('sha256').update(key).digest('hex');
 
 const app = express();
 
@@ -25,7 +29,45 @@ app.get('/', (req, res) => {
   res.send('Count The Basket API is running! 🏀');
 });
 
-// 3. PLAYER ROUTES
+// 3. LEAGUE ROUTES
+app.post('/api/leagues/create', async (req, res) => {
+  const { name, key } = req.body;
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ message: 'League name is required.' });
+  }
+  if (!key || typeof key !== 'string' || key.length < 4) {
+    return res.status(400).json({ message: 'Key must be at least 4 characters.' });
+  }
+  try {
+    const keyHash = hashKey(key);
+    const existing = await League.findOne({ keyHash });
+    if (existing) {
+      return res.status(409).json({ message: 'That key is already taken. Choose a different one.' });
+    }
+    const league = new League({ name: name.trim(), keyHash });
+    const saved = await league.save();
+    res.status(201).json({ _id: saved._id, name: saved.name });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+app.post('/api/leagues/join', async (req, res) => {
+  const { key } = req.body;
+  if (!key || typeof key !== 'string') {
+    return res.status(400).json({ message: 'Key is required.' });
+  }
+  try {
+    const keyHash = hashKey(key);
+    const league = await League.findOne({ keyHash });
+    if (!league) return res.status(404).json({ message: 'No league found with that key. Check and try again.' });
+    res.json({ _id: league._id, name: league.name });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 4. PLAYER ROUTES
 app.get('/api/players', async (req, res) => {
   try {
     const players = await Player.find().sort({ team: 1, number: 1 });
@@ -87,10 +129,12 @@ app.post('/api/players/load-roster', async (req, res) => {
   }
 });
 
-// 4. ROSTER ROUTES
+// 5. ROSTER ROUTES
 app.get('/api/rosters', async (req, res) => {
   try {
-    const rosters = await Roster.find().sort({ createdAt: -1 });
+    const { leagueId } = req.query;
+    const filter = leagueId ? { leagueId } : {};
+    const rosters = await Roster.find(filter).sort({ createdAt: -1 });
     res.json(rosters);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -125,7 +169,7 @@ app.delete('/api/rosters/:id', async (req, res) => {
   }
 });
 
-// 5. SERVER STARTUP
+// 6. SERVER STARTUP
 const PORT = process.env.PORT || 3001;
 
 const startServer = async () => {

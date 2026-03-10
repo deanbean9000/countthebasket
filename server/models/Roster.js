@@ -4,6 +4,7 @@ const rosterSchema = new mongoose.Schema({
   name: { type: String, required: true },
   homeTeamName: { type: String, default: 'Home' },
   awayTeamName: { type: String, default: 'Away' },
+  leagueId: { type: mongoose.Schema.Types.ObjectId, ref: 'League', index: true },
   players: [{
     name: String,
     number: Number,
