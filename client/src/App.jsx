@@ -15,8 +15,9 @@ function App() {
   const [step, setStep] = useState('number');
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [prompt, setPrompt] = useState('Enter player number:');
+  const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g):');
   const inputRef = useRef(null);
+  const submitting = useRef(false);
 
   // --- CODESPACES CONNECTION FIX ---
   // This detects your current URL and forces it to point to the backend port 3001
@@ -49,25 +50,35 @@ function App() {
     setStep('number');
     setPlayerNumber('');
     setSelectedPlayer(null);
-    setPrompt('Enter player number:');
+    setPrompt('Enter number + team (e.g. 5h or 12g):');
   };
 
   const handleKeyPress = async (e) => {
+    if (submitting.current) return;
     const input = e.target.value.trim().toLowerCase();
 
     if (e.key === 'Enter') {
       if (step === 'number') {
-        // Find player by number
-        const player = players.find(p => p.number === parseInt(input));
-        if (player) {
-          setSelectedPlayer(player);
-          setPlayerNumber(input);
-          setPrompt(`${player.name} (#${player.number}) - [P]oints or [R]ebounds?`);
-          setStep('action');
+        // Parse format: number + team suffix (h or g), e.g. "5h" or "12g"
+        const match = input.match(/^(\d+)([hg])$/);
+        if (!match) {
+          alert('Format: number + h or g\nExamples: 5h (home), 12g (guest)');
           e.target.value = '';
         } else {
-          alert('Player not found! Try again.');
-          e.target.value = '';
+          const num = parseInt(match[1]);
+          const teamSuffix = match[2];
+          const team = teamSuffix === 'h' ? 'Home' : 'Away';
+          const player = players.find(p => p.number === num && p.team === team);
+          if (player) {
+            setSelectedPlayer(player);
+            setPlayerNumber(input);
+            setPrompt(`${player.name} (#${player.number} ${team === 'Home' ? homeTeamName : awayTeamName}) — [P]oints or [R]ebounds?`);
+            setStep('action');
+            e.target.value = '';
+          } else {
+            alert(`No #${num} found on ${team === 'Home' ? homeTeamName : awayTeamName}. Try again.`);
+            e.target.value = '';
+          }
         }
       } else if (step === 'action') {
         if (input === 'p') {
@@ -85,22 +96,28 @@ function App() {
       } else if (step === 'points') {
         const points = parseInt(input);
         if ([1, 2, 3].includes(points)) {
+          submitting.current = true;
           await addPoints(selectedPlayer._id, points);
           e.target.value = '';
           resetFlow();
+          submitting.current = false;
         } else {
           alert('Enter 1, 2, or 3 points');
           e.target.value = '';
         }
       } else if (step === 'rebounds') {
         if (input === 'o') {
+          submitting.current = true;
           await addRebound(selectedPlayer._id, 'offensive');
           e.target.value = '';
           resetFlow();
+          submitting.current = false;
         } else if (input === 'd') {
+          submitting.current = true;
           await addRebound(selectedPlayer._id, 'defensive');
           e.target.value = '';
           resetFlow();
+          submitting.current = false;
         } else {
           alert('Press O for Offensive or D for Defensive');
           e.target.value = '';
