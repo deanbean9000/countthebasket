@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
+import Hero from './Hero';
 import RosterSetup from './RosterSetup';
+import NewGame from './NewGame';
 
 function App() {
-  const [gameStarted, setGameStarted] = useState(false);
+  // view: 'hero' | 'createRoster' | 'newGame' | 'game'
+  const [view, setView] = useState('hero');
   const [players, setPlayers] = useState([]);
   const [homeTeamName, setHomeTeamName] = useState('Home');
   const [awayTeamName, setAwayTeamName] = useState('Away');
-  const [step, setStep] = useState('number'); 
+  const [step, setStep] = useState('number');
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [prompt, setPrompt] = useState('Enter player number:');
@@ -18,10 +21,10 @@ function App() {
  const API_URL = import.meta.env.VITE_API_URL || window.location.origin.replace('-5173', '-3001');
 
   useEffect(() => {
-    if (gameStarted) {
+    if (view === 'game') {
       fetchPlayers();
     }
-  }, [gameStarted]);
+  }, [view]);
 
   useEffect(() => {
     // Auto-focus input on every step change
@@ -150,7 +153,7 @@ function App() {
   const awayStats = getTeamStats('Away');
 
   const endGame = () => {
-    setGameStarted(false);
+    setView('hero');
     setPlayers([]);
     setHomeTeamName('Home');
     setAwayTeamName('Away');
@@ -160,12 +163,32 @@ function App() {
   const handleStartGame = (config = {}) => {
     setHomeTeamName(config.homeTeamName || 'Home');
     setAwayTeamName(config.awayTeamName || 'Away');
-    setGameStarted(true);
+    setView('game');
   };
 
-  // Show roster setup screen if game hasn't started
-  if (!gameStarted) {
-    return <RosterSetup onStartGame={handleStartGame} />;
+  // Show hero page
+  if (view === 'hero') {
+    return (
+      <Hero
+        onCreateRoster={() => setView('createRoster')}
+        onNewGame={() => setView('newGame')}
+      />
+    );
+  }
+
+  // Show create roster page
+  if (view === 'createRoster') {
+    return <RosterSetup onBack={() => setView('hero')} />;
+  }
+
+  // Show new game setup
+  if (view === 'newGame') {
+    return (
+      <NewGame
+        onStartGame={handleStartGame}
+        onBack={() => setView('hero')}
+      />
+    );
   }
 
   return (
