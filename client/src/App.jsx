@@ -4,18 +4,22 @@ import LeagueGate from './LeagueGate';
 import Hero from './Hero';
 import RosterSetup from './RosterSetup';
 import NewGame from './NewGame';
+import GameHistory from './GameHistory';
+import Standing from './Standing';
 
 function App() {
   // view: 'leagueGate' | 'hero' | 'createRoster' | 'newGame' | 'game'
   const [view, setView] = useState('leagueGate');
   const [league, setLeague] = useState(null); // { _id, name }
   const [players, setPlayers] = useState([]);
+  const [summaryPlayers, setSummaryPlayers] = useState([]);
   const [homeTeamName, setHomeTeamName] = useState('Home');
   const [awayTeamName, setAwayTeamName] = useState('Away');
   const [step, setStep] = useState('number');
   const [playerNumber, setPlayerNumber] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g):');
+  const [foulTeam, setFoulTeam] = useState(null);
+  const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g) or [F]oul:');
   const inputRef = useRef(null);
   const submitting = useRef(false);
 
@@ -50,7 +54,8 @@ function App() {
     setStep('number');
     setPlayerNumber('');
     setSelectedPlayer(null);
-    setPrompt('Enter number + team (e.g. 5h or 12g):');
+    setFoulTeam(null);
+    setPrompt('Enter number + team (e.g. 5h or 12g) or [F]oul:');
   };
 
   const handleKeyPress = async (e) => {
@@ -59,10 +64,17 @@ function App() {
 
     if (e.key === 'Enter') {
       if (step === 'number') {
+        // Start foul flow
+        if (input === 'f') {
+          setPrompt('Foul — [H]ome or [G]uest?');
+          setStep('foulTeam');
+          e.target.value = '';
+          return;
+        }
         // Parse format: number + team suffix (h or g), e.g. "5h" or "12g"
         const match = input.match(/^(\d+)([hg])$/);
         if (!match) {
-          alert('Format: number + h or g\nExamples: 5h (home), 12g (guest)');
+          alert('Format: number + h or g\nExamples: 5h (home), 12g (guest)\nOr type f for a foul');
           e.target.value = '';
         } else {
           const num = parseInt(match[1]);
@@ -72,7 +84,7 @@ function App() {
           if (player) {
             setSelectedPlayer(player);
             setPlayerNumber(input);
-            setPrompt(`${player.name} (#${player.number} ${team === 'Home' ? homeTeamName : awayTeamName}) — [P]oints or [R]ebounds?`);
+            setPrompt(`${player.name} (#${player.number} ${team === 'Home' ? homeTeamName : awayTeamName}) — [P]oints, [R]ebounds, or [F]oul?`);
             setStep('action');
             e.target.value = '';
           } else {
@@ -89,8 +101,14 @@ function App() {
           setPrompt(`${selectedPlayer.name} - [O]ffensive or [D]efensive rebound?`);
           setStep('rebounds');
           e.target.value = '';
+        } else if (input === 'f') {
+          submitting.current = true;
+          await addFoul(selectedPlayer._id);
+          e.target.value = '';
+          resetFlow();
+          submitting.current = false;
         } else {
-          alert('Press P for Points or R for Rebounds');
+          alert('Press P for Points, R for Rebounds, or F for Foul');
           e.target.value = '';
         }
       } else if (step === 'points') {
@@ -121,6 +139,37 @@ function App() {
         } else {
           alert('Press O for Offensive or D for Defensive');
           e.target.value = '';
+        }
+      } else if (step === 'foulTeam') {
+        if (input === 'h' || input === 'g') {
+          const team = input === 'h' ? 'Home' : 'Away';
+          const teamLabel = input === 'h' ? homeTeamName : awayTeamName;
+          setFoulTeam(team);
+          setPrompt(`Foul — ${teamLabel} player number:`);
+          setStep('foulNumber');
+          e.target.value = '';
+        } else {
+          alert('Press H for Home or G for Guest');
+          e.target.value = '';
+        }
+      } else if (step === 'foulNumber') {
+        const num = parseInt(input);
+        if (isNaN(num)) {
+          alert('Enter a valid player number');
+          e.target.value = '';
+        } else {
+          const player = players.find(p => p.number === num && p.team === foulTeam);
+          if (player) {
+            submitting.current = true;
+            await addFoul(player._id);
+            e.target.value = '';
+            resetFlow();
+            submitting.current = false;
+          } else {
+            const teamLabel = foulTeam === 'Home' ? homeTeamName : awayTeamName;
+            alert(`No #${num} found on ${teamLabel}. Try again.`);
+            e.target.value = '';
+          }
         }
       }
     }
@@ -158,24 +207,71 @@ function App() {
     }
   };
 
+  const addFoul = async (playerId) => {
+    try {
+      await fetch(`${API_URL}/api/players/${playerId}/foul`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      await fetchPlayers();
+    } catch (error) {
+      console.error('Error adding foul:', error);
+    }
+  };
+
   const getTeamStats = (team) => {
     const teamPlayers = players.filter(p => p.team === team);
     return {
       points: teamPlayers.reduce((sum, p) => sum + p.points, 0),
       rebounds: teamPlayers.reduce((sum, p) => sum + p.rebounds, 0),
       offensive: teamPlayers.reduce((sum, p) => sum + (p.offensiveRebounds || 0), 0),
-      defensive: teamPlayers.reduce((sum, p) => sum + (p.defensiveRebounds || 0), 0)
+      defensive: teamPlayers.reduce((sum, p) => sum + (p.defensiveRebounds || 0), 0),
+      fouls: teamPlayers.reduce((sum, p) => sum + (p.fouls || 0), 0)
     };
   };
 
   const homeStats = getTeamStats('Home');
   const awayStats = getTeamStats('Away');
 
-  const endGame = () => {
-    setView('hero');
+  const endGame = async () => {
+    const snap = [...players];
+    setSummaryPlayers(snap);
+    // Save game summary to DB
+    if (league) {
+      const homeP = snap.filter(p => p.team === 'Home');
+      const awayP = snap.filter(p => p.team === 'Away');
+      const homeScore = homeP.reduce((s, p) => s + p.points, 0);
+      const awayScore = awayP.reduce((s, p) => s + p.points, 0);
+      const winner = homeScore > awayScore ? homeTeamName : awayScore > homeScore ? awayTeamName : null;
+      try {
+        await fetch(`${API_URL}/api/game-summaries`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leagueId: league._id,
+            homeTeamName,
+            awayTeamName,
+            homeScore,
+            awayScore,
+            winner,
+            players: snap.map(p => ({
+              name: p.name,
+              number: p.number,
+              team: p.team,
+              points: p.points,
+              rebounds: p.rebounds,
+              offensiveRebounds: p.offensiveRebounds || 0,
+              defensiveRebounds: p.defensiveRebounds || 0,
+              fouls: p.fouls || 0
+            }))
+          })
+        });
+      } catch (err) {
+        console.error('Failed to save game summary:', err);
+      }
+    }
+    setView('summary');
     setPlayers([]);
-    setHomeTeamName('Home');
-    setAwayTeamName('Away');
     resetFlow();
   };
 
@@ -184,6 +280,89 @@ function App() {
     setAwayTeamName(config.awayTeamName || 'Away');
     setView('game');
   };
+
+  // Show end-of-game summary
+  if (view === 'summary') {
+    const homeP = summaryPlayers.filter(p => p.team === 'Home');
+    const awayP = summaryPlayers.filter(p => p.team === 'Away');
+    const calcTotals = (pList) => ({
+      points: pList.reduce((s, p) => s + p.points, 0),
+      rebounds: pList.reduce((s, p) => s + p.rebounds, 0),
+      offensive: pList.reduce((s, p) => s + (p.offensiveRebounds || 0), 0),
+      defensive: pList.reduce((s, p) => s + (p.defensiveRebounds || 0), 0),
+      fouls: pList.reduce((s, p) => s + (p.fouls || 0), 0),
+    });
+    const homeTotals = calcTotals(homeP);
+    const awayTotals = calcTotals(awayP);
+    const winner = homeTotals.points > awayTotals.points
+      ? homeTeamName
+      : awayTotals.points > homeTotals.points
+      ? awayTeamName
+      : null;
+    return (
+      <div className="app">
+        <div className="summary-container">
+          <h1 className="summary-title">🏀 Final Score</h1>
+          <div className="summary-scoreboard">
+            <div className="summary-team-score">
+              <div className="summary-team-name">{homeTeamName}</div>
+              <div className="summary-score">{homeTotals.points}</div>
+            </div>
+            <div className="summary-vs">{winner ? `${winner} Wins!` : 'Tie Game!'}</div>
+            <div className="summary-team-score">
+              <div className="summary-team-name">{awayTeamName}</div>
+              <div className="summary-score">{awayTotals.points}</div>
+            </div>
+          </div>
+          <div className="summary-teams">
+            {[{ label: homeTeamName, pList: homeP, totals: homeTotals }, { label: awayTeamName, pList: awayP, totals: awayTotals }].map(({ label, pList, totals }) => (
+              <div key={label} className="summary-team-block">
+                <h2 className="summary-team-header">{label}</h2>
+                <div className="summary-totals">
+                  <span className="summary-total-badge">{totals.points} PTS</span>
+                  <span className="summary-total-badge">{totals.rebounds} REB ({totals.offensive}O/{totals.defensive}D)</span>
+                  <span className="summary-total-badge fouls">{totals.fouls} FOULS</span>
+                </div>
+                <table className="summary-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Name</th>
+                      <th>PTS</th>
+                      <th>REB</th>
+                      <th>FOULS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pList.map(p => (
+                      <tr key={p._id}>
+                        <td>{p.number}</td>
+                        <td>{p.name}</td>
+                        <td>{p.points}</td>
+                        <td>{p.rebounds} ({p.offensiveRebounds || 0}O/{p.defensiveRebounds || 0}D)</td>
+                        <td>{p.fouls || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+          <button
+            className="btn-back-home"
+            onClick={() => {
+              setView('hero');
+              setSummaryPlayers([]);
+              setHomeTeamName('Home');
+              setAwayTeamName('Away');
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // League gate — must enter a league first
   if (view === 'leagueGate') {
@@ -201,6 +380,8 @@ function App() {
         league={league}
         onCreateRoster={() => setView('createRoster')}
         onNewGame={() => setView('newGame')}
+        onViewHistory={() => setView('gameHistory')}
+        onViewStandings={() => setView('standings')}
         onLeaveLeague={() => { setLeague(null); setView('leagueGate'); }}
       />
     );
@@ -209,6 +390,30 @@ function App() {
   // Show create roster page
   if (view === 'createRoster') {
     return <RosterSetup leagueId={league._id} onBack={() => setView('hero')} />;
+  }
+
+  // Show standings
+  if (view === 'standings') {
+    return (
+      <Standing
+        leagueId={league._id}
+        leagueName={league.name}
+        apiUrl={API_URL}
+        onBack={() => setView('hero')}
+      />
+    );
+  }
+
+  // Show game history
+  if (view === 'gameHistory') {
+    return (
+      <GameHistory
+        leagueId={league._id}
+        leagueName={league.name}
+        apiUrl={API_URL}
+        onBack={() => setView('hero')}
+      />
+    );
   }
 
   // Show new game setup
@@ -288,7 +493,7 @@ function App() {
               <h2 className="team-header">
                 {homeTeamName}
                 <span className="team-stats">
-                  {homeStats.points} pts | {homeStats.rebounds} reb ({homeStats.offensive}O/{homeStats.defensive}D)
+                  {homeStats.points} pts | {homeStats.rebounds} reb ({homeStats.offensive}O/{homeStats.defensive}D) | {homeStats.fouls} fouls
                 </span>
               </h2>
               {players
@@ -304,6 +509,9 @@ function App() {
                       <span className="stat-badge rebounds">
                         {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
                       </span>
+                      {(player.fouls || 0) > 0 && (
+                        <span className="stat-badge fouls">{player.fouls} FOULS</span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -313,7 +521,7 @@ function App() {
               <h2 className="team-header">
                 {awayTeamName}
                 <span className="team-stats">
-                  {awayStats.points} pts | {awayStats.rebounds} reb ({awayStats.offensive}O/{awayStats.defensive}D)
+                  {awayStats.points} pts | {awayStats.rebounds} reb ({awayStats.offensive}O/{awayStats.defensive}D) | {awayStats.fouls} fouls
                 </span>
               </h2>
               {players
@@ -329,6 +537,9 @@ function App() {
                       <span className="stat-badge rebounds">
                         {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
                       </span>
+                      {(player.fouls || 0) > 0 && (
+                        <span className="stat-badge fouls">{player.fouls} FOULS</span>
+                      )}
                     </div>
                   </div>
                 ))}

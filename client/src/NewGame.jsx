@@ -86,14 +86,14 @@ function NewGame({ leagueId, onStartGame, onBack }) {
     <div className="new-game">
       <div className="new-game-header">
         <button onClick={onBack} className="btn-back">← Back</button>
-        <h1>🏀 New Game</h1>
+        <h1> New Game</h1>
         <div />
       </div>
 
       <div className="new-game-body">
         <div className="team-selection-row">
           <div className="team-slot home-slot">
-            <h2 className="slot-label home-label">🏠 Home Team</h2>
+            <h2 className="slot-label home-label"> Home Team</h2>
             {homeRoster ? (
               <div className="selected-team">
                 <div className="selected-team-name">{getDisplayName(homeRoster)}</div>

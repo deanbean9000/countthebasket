@@ -1,0 +1,143 @@
+.gh-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.gh-back-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+.gh-back-btn:hover {
+  border-color: #ffd700;
+  color: #ffd700;
+}
+
+.gh-title {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 8px;
+}
+
+.gh-league-name {
+  text-align: center;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 30px;
+  letter-spacing: 0.5px;
+}
+
+.gh-loading,
+.gh-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.1rem;
+  padding: 60px 20px;
+}
+
+.gh-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gh-game-card {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 18px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  width: 100%;
+  color: white;
+}
+
+.gh-game-card:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: #ffd700;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.gh-game-date {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.gh-game-scoreline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.gh-team {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 100px;
+}
+
+.gh-team.gh-winner {
+  color: #ffd700;
+}
+
+.gh-scores {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.gh-winning-score {
+  color: #ffd700;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+}
+
+.gh-dash {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.5rem;
+}
+
+.gh-result {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.3px;
+}
+
+.gh-detail-date {
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 600px) {
+  .gh-team {
+    font-size: 0.95rem;
+    min-width: 70px;
+  }
+
+  .gh-scores {
+    font-size: 1.5rem;
+  }
+}

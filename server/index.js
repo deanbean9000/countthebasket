@@ -6,6 +6,7 @@ import Item from './models/Item.js';
 import Player from './models/Player.js';
 import Roster from './models/Roster.js';
 import League from './models/League.js';
+import GameSummary from './models/GameSummary.js';
 
 const hashKey = (key) => crypto.createHash('sha256').update(key).digest('hex');
 
@@ -106,10 +107,23 @@ app.patch('/api/players/:id/rebound', async (req, res) => {
   }
 });
 
+app.patch('/api/players/:id/foul', async (req, res) => {
+  try {
+    const player = await Player.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { fouls: 1 } },
+      { new: true }
+    );
+    res.json(player);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 app.post('/api/players/reset', async (req, res) => {
   try {
     await Player.updateMany({}, { 
-      $set: { points: 0, rebounds: 0, offensiveRebounds: 0, defensiveRebounds: 0 } 
+      $set: { points: 0, rebounds: 0, offensiveRebounds: 0, defensiveRebounds: 0, fouls: 0 } 
     });
     const players = await Player.find().sort({ team: 1, number: 1 });
     res.json(players);
@@ -129,7 +143,31 @@ app.post('/api/players/load-roster', async (req, res) => {
   }
 });
 
-// 5. ROSTER ROUTES
+// 5. GAME SUMMARY ROUTES
+app.post('/api/game-summaries', async (req, res) => {
+  const { leagueId, homeTeamName, awayTeamName, homeScore, awayScore, winner, players } = req.body;
+  if (!leagueId) return res.status(400).json({ message: 'leagueId is required.' });
+  try {
+    const summary = new GameSummary({ leagueId, homeTeamName, awayTeamName, homeScore, awayScore, winner, players });
+    const saved = await summary.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+app.get('/api/game-summaries', async (req, res) => {
+  const { leagueId } = req.query;
+  if (!leagueId) return res.status(400).json({ message: 'leagueId is required.' });
+  try {
+    const summaries = await GameSummary.find({ leagueId }).sort({ playedAt: -1 });
+    res.json(summaries);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 6. ROSTER ROUTES
 app.get('/api/rosters', async (req, res) => {
   try {
     const { leagueId } = req.query;

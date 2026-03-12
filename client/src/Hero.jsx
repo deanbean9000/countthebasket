@@ -1,10 +1,9 @@
 import './Hero.css';
 
-function Hero({ league, onCreateRoster, onNewGame, onLeaveLeague }) {
+function Hero({ league, onCreateRoster, onNewGame, onViewHistory, onViewStandings, onLeaveLeague }) {
   return (
     <div className="hero">
       <div className="hero-content">
-        <span className="hero-logo">🏀</span>
         <h1 className="hero-title">Count The Basket</h1>
         {league && (
           <div className="hero-league-badge">
@@ -20,6 +19,16 @@ function Hero({ league, onCreateRoster, onNewGame, onLeaveLeague }) {
           <button className="hero-btn hero-btn-success" onClick={onNewGame}>
             🏀 New Game
           </button>
+          {league && (
+            <button className="hero-btn hero-btn-history" onClick={onViewHistory}>
+              📋 Past Games
+            </button>
+          )}
+          {league && (
+            <button className="hero-btn hero-btn-standings" onClick={onViewStandings}>
+              🏆 Standings
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -9,12 +9,16 @@ body {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
   min-height: 100vh;
+  display: flex;
+  justify-content: center;
 }
 
 .app {
+  width: 100%;
   max-width: 1600px;
   margin: 0 auto;
   padding: 20px;
+  text-align: center;
 }
 
 /* Main Layout with Sidebar */
@@ -251,6 +255,7 @@ body {
 .player-info {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 15px;
   margin-bottom: 15px;
 }
@@ -273,6 +278,7 @@ body {
 
 .player-stats {
   display: flex;
+  justify-content: center;
   gap: 15px;
   flex-wrap: wrap;
 }
@@ -290,6 +296,177 @@ body {
 
 .stat-badge.rebounds {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-badge.fouls {
+  background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+}
+
+/* Game Summary */
+.summary-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 30px 20px;
+}
+
+.summary-title {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 30px;
+}
+
+.summary-scoreboard {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 40px;
+}
+
+.summary-team-score {
+  text-align: center;
+  flex: 1;
+}
+
+.summary-team-name {
+  font-size: 1.4rem;
+  color: #ffd700;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.summary-score {
+  font-size: 5rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  line-height: 1;
+}
+
+.summary-vs {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #ffd700;
+  text-align: center;
+  min-width: 140px;
+  padding: 10px;
+  border: 2px solid #ffd700;
+  border-radius: 10px;
+}
+
+.summary-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.summary-team-block {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.summary-team-header {
+  text-align: center;
+  color: #ffd700;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.4);
+}
+
+.summary-totals {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.summary-total-badge {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.summary-total-badge.fouls {
+  background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.summary-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffd700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-table th:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.summary-table th:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.summary-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.summary-table tr:last-child td {
+  border-bottom: none;
+}
+
+.summary-table tr:hover td {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-back-home {
+  display: block;
+  margin: 0 auto;
+  padding: 14px 40px;
+  background: linear-gradient(135deg, #ffd700 0%, #f7931e 100%);
+  color: #1e3c72;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-back-home:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+@media (max-width: 700px) {
+  .summary-teams {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-scoreboard {
+    flex-direction: column;
+    gap: 15px;
+  }
 }
 
 /* Responsive Design */
