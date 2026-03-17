@@ -6,6 +6,7 @@ import RosterSetup from './RosterSetup';
 import NewGame from './NewGame';
 import GameHistory from './GameHistory';
 import Standing from './Standing';
+import GameGrid from './GameGrid';
 
 function App() {
   // view: 'leagueGate' | 'hero' | 'createRoster' | 'newGame' | 'game'
@@ -429,124 +430,17 @@ function App() {
 
   return (
     <div className="app">
-      <header className="scoreboard-header">
-        <div className="team-score">
-          <h2>{homeTeamName}</h2>
-          <div className="score">{homeStats.points}</div>
-        </div>
-        <div className="game-title">
-          <h1>🏀 Count The Basket</h1>
-          <button onClick={endGame} className="btn-end-game">End Game</button>
-        </div>
-        <div className="team-score">
-          <h2>{awayTeamName}</h2>
-          <div className="score">{awayStats.points}</div>
-        </div>
-      </header>
-
-      <div className="main-layout">
-        <aside className="roster-sidebar">
-          <div className="roster-section">
-            <h3 className="roster-title">{homeTeamName} Roster</h3>
-            <div className="roster-list">
-              {players
-                .filter(p => p.team === 'Home')
-                .map(player => (
-                  <div key={player._id} className="roster-item">
-                    <span className="roster-number">#{player.number}</span>
-                    <span className="roster-name">{player.name}</span>
-                  </div>
-                ))}
-            </div>
-          </div>
-          <div className="roster-section">
-            <h3 className="roster-title">{awayTeamName} Roster</h3>
-            <div className="roster-list">
-              {players
-                .filter(p => p.team === 'Away')
-                .map(player => (
-                  <div key={player._id} className="roster-item">
-                    <span className="roster-number">#{player.number}</span>
-                    <span className="roster-name">{player.name}</span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </aside>
-
-        <div className="main-content">
-          <div className="quick-entry">
-            <div className="prompt">{prompt}</div>
-            <input
-              ref={inputRef}
-              type="text"
-              className="stat-input"
-              onKeyDown={handleKeyPress}
-              placeholder="Type here..."
-              autoFocus
-            />
-            <div className="hint">Press ESC to cancel</div>
-          </div>
-
-          <div className="teams-container">
-            <div className="team-column">
-              <h2 className="team-header">
-                {homeTeamName}
-                <span className="team-stats">
-                  {homeStats.points} pts | {homeStats.rebounds} reb ({homeStats.offensive}O/{homeStats.defensive}D) | {homeStats.fouls} fouls
-                </span>
-              </h2>
-              {players
-                .filter(p => p.team === 'Home')
-                .map(player => (
-                  <div key={player._id} className="player-card">
-                    <div className="player-info">
-                      <span className="player-number">#{player.number}</span>
-                      <span className="player-name">{player.name}</span>
-                    </div>
-                    <div className="player-stats">
-                      <span className="stat-badge points">{player.points} PTS</span>
-                      <span className="stat-badge rebounds">
-                        {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
-                      </span>
-                      {(player.fouls || 0) > 0 && (
-                        <span className="stat-badge fouls">{player.fouls} FOULS</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            <div className="team-column">
-              <h2 className="team-header">
-                {awayTeamName}
-                <span className="team-stats">
-                  {awayStats.points} pts | {awayStats.rebounds} reb ({awayStats.offensive}O/{awayStats.defensive}D) | {awayStats.fouls} fouls
-                </span>
-              </h2>
-              {players
-                .filter(p => p.team === 'Away')
-                .map(player => (
-                  <div key={player._id} className="player-card">
-                    <div className="player-info">
-                      <span className="player-number">#{player.number}</span>
-                      <span className="player-name">{player.name}</span>
-                    </div>
-                    <div className="player-stats">
-                      <span className="stat-badge points">{player.points} PTS</span>
-                      <span className="stat-badge rebounds">
-                        {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
-                      </span>
-                      {(player.fouls || 0) > 0 && (
-                        <span className="stat-badge fouls">{player.fouls} FOULS</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <GameGrid
+        homeTeamName={homeTeamName}
+        awayTeamName={awayTeamName}
+        players={players}
+        homeStats={homeStats}
+        awayStats={awayStats}
+        prompt={prompt}
+        inputRef={inputRef}
+        onKeyPress={handleKeyPress}
+        onEndGame={endGame}
+      />
     </div>
   );
 }
