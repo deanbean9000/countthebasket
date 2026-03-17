@@ -7,6 +7,7 @@ import NewGame from './NewGame';
 import GameHistory from './GameHistory';
 import Standing from './Standing';
 import GameGrid from './GameGrid';
+import Leaderboard from './Leaderboard';
 
 function App() {
   // view: 'leagueGate' | 'hero' | 'createRoster' | 'newGame' | 'game'
@@ -383,6 +384,7 @@ function App() {
         onNewGame={() => setView('newGame')}
         onViewHistory={() => setView('gameHistory')}
         onViewStandings={() => setView('standings')}
+        onViewLeaderboard={() => setView('leaderboard')}
         onLeaveLeague={() => { setLeague(null); setView('leagueGate'); }}
       />
     );
@@ -391,6 +393,18 @@ function App() {
   // Show create roster page
   if (view === 'createRoster') {
     return <RosterSetup leagueId={league._id} onBack={() => setView('hero')} />;
+  }
+
+  // Show leaderboard
+  if (view === 'leaderboard') {
+    return (
+      <Leaderboard
+        leagueId={league._id}
+        leagueName={league.name}
+        apiUrl={API_URL}
+        onBack={() => setView('hero')}
+      />
+    );
   }
 
   // Show standings

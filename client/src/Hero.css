@@ -151,3 +151,16 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
   border-color: #ffb74d;
 }
+
+.hero-btn-leaderboard {
+  background: linear-gradient(135deg, #1565c0, #1976d2);
+  color: white;
+  border: 2px solid rgba(100, 181, 246, 0.5);
+}
+
+.hero-btn-leaderboard:hover {
+  background: linear-gradient(135deg, #1976d2, #1e88e5);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  border-color: #64b5f6;
+}

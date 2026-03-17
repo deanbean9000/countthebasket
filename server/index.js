@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { testDbConnection } from './db.js';
 import Item from './models/Item.js';
 import Player from './models/Player.js';
@@ -167,7 +168,57 @@ app.get('/api/game-summaries', async (req, res) => {
   }
 });
 
-// 6. ROSTER ROUTES
+// 6. SEASON STATS ROUTE
+// Aggregates all GameSummary player entries for a league into per-player season averages.
+app.get('/api/season-stats', async (req, res) => {
+  const { leagueId } = req.query;
+  if (!leagueId) return res.status(400).json({ message: 'leagueId is required.' });
+
+  // Validate leagueId is a proper ObjectId to avoid injection
+  if (!/^[0-9a-fA-F]{24}$/.test(leagueId)) {
+    return res.status(400).json({ message: 'Invalid leagueId.' });
+  }
+
+  try {
+    const stats = await GameSummary.aggregate([
+      { $match: { leagueId: new mongoose.Types.ObjectId(leagueId) } },
+      { $unwind: '$players' },
+      {
+        $group: {
+          _id: { name: '$players.name', number: '$players.number' },
+          games:             { $sum: 1 },
+          totalPoints:       { $sum: '$players.points' },
+          totalRebounds:     { $sum: '$players.rebounds' },
+          totalOffRebounds:  { $sum: '$players.offensiveRebounds' },
+          totalDefRebounds:  { $sum: '$players.defensiveRebounds' },
+          totalFouls:        { $sum: '$players.fouls' },
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          name:   '$_id.name',
+          number: '$_id.number',
+          games:  1,
+          totalPoints:      1,
+          totalRebounds:    1,
+          totalOffRebounds: 1,
+          totalDefRebounds: 1,
+          totalFouls:       1,
+          ppg: { $round: [{ $divide: ['$totalPoints',   '$games'] }, 1] },
+          rpg: { $round: [{ $divide: ['$totalRebounds', '$games'] }, 1] },
+          fpg: { $round: [{ $divide: ['$totalFouls',    '$games'] }, 1] },
+        }
+      },
+      { $sort: { ppg: -1 } }
+    ]);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 7. ROSTER ROUTES
 app.get('/api/rosters', async (req, res) => {
   try {
     const { leagueId } = req.query;
@@ -207,7 +258,7 @@ app.delete('/api/rosters/:id', async (req, res) => {
   }
 });
 
-// 6. SERVER STARTUP
+// 8. SERVER STARTUP
 const PORT = process.env.PORT || 3001;
 
 const startServer = async () => {
