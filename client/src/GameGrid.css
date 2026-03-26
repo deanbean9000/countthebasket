@@ -58,12 +58,16 @@
 
 /* ─── Slot position classes (desktop) ──────────────────────────────────── */
 .game-grid .slot-top        { grid-column: 1 / -1; grid-row: 1; }
-.game-grid .slot-left-mid   { grid-column: 1;      grid-row: 2; }
+.game-grid .slot-left-mid   { grid-column: 1;      grid-row: 2 / 4; align-self: start; }
 .game-grid .slot-center-mid { grid-column: 2;      grid-row: 2; }
-.game-grid .slot-right-mid  { grid-column: 3;      grid-row: 2; }
+.game-grid .slot-right-mid  { grid-column: 3;      grid-row: 2 / 4; align-self: start; }
 .game-grid .slot-left-bot   { grid-column: 1;      grid-row: 3; }
 .game-grid .slot-center-bot { grid-column: 2;      grid-row: 3; }
 .game-grid .slot-right-bot  { grid-column: 3;      grid-row: 3; }
+
+/* Hide empty side-bot slots so they don't conflict with the spanning mid slots */
+.game-grid .slot-left-bot.grid-slot--empty,
+.game-grid .slot-right-bot.grid-slot--empty { display: none; }
 
 /* ─── Grid slot shell ───────────────────────────────────────────────────── */
 .grid-slot {
@@ -123,6 +127,54 @@
 /* ─── Quick-entry inner layout ───────────────────────────────────────────── */
 .quick-entry-content {
   text-align: center;
+}
+
+/* ── Undo panel ─────────────────────────────────────────────────────────── */
+.undo-panel {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.undo-history {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.undo-entry {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.undo-entry--last {
+  background: rgba(255, 215, 0, 0.1);
+  color: rgba(255, 215, 0, 0.75);
+  font-weight: 600;
+}
+
+.btn-undo {
+  padding: 7px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 107, 53, 0.5);
+  background: rgba(255, 107, 53, 0.08);
+  color: #ff6b35;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.btn-undo:hover {
+  background: rgba(255, 107, 53, 0.18);
+  box-shadow: 0 0 12px rgba(255, 107, 53, 0.2);
 }
 
 /* ─── Teams layout inside PlayerCardsWidget ──────────────────────────────── */

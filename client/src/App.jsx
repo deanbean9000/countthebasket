@@ -22,8 +22,12 @@ function App() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [foulTeam, setFoulTeam] = useState(null);
   const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g) or [F]oul:');
+  const [actionHistory, setActionHistory] = useState([]); // stack of undoable actions
   const inputRef = useRef(null);
   const submitting = useRef(false);
+
+  const pushHistory = (entry) =>
+    setActionHistory(prev => [...prev.slice(-19), entry]); // keep last 20
 
   // --- CODESPACES CONNECTION FIX ---
   // This detects your current URL and forces it to point to the backend port 3001
@@ -58,6 +62,18 @@ function App() {
     setSelectedPlayer(null);
     setFoulTeam(null);
     setPrompt('Enter number + team (e.g. 5h or 12g) or [F]oul:');
+  };
+
+  const handlePlayerSelect = (player) => {
+    if (submitting.current) return;
+    const teamLabel = player.team === 'Home' ? homeTeamName : awayTeamName;
+    setSelectedPlayer(player);
+    setStep('action');
+    setPrompt(`${player.name} (#${player.number} ${teamLabel}) — [P]oints, [R]ebounds, or [F]oul?`);
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.focus();
+    }
   };
 
   const handleKeyPress = async (e) => {
@@ -105,7 +121,7 @@ function App() {
           e.target.value = '';
         } else if (input === 'f') {
           submitting.current = true;
-          await addFoul(selectedPlayer._id);
+          await addFoul(selectedPlayer._id, selectedPlayer.name);
           e.target.value = '';
           resetFlow();
           submitting.current = false;
@@ -117,7 +133,7 @@ function App() {
         const points = parseInt(input);
         if ([1, 2, 3].includes(points)) {
           submitting.current = true;
-          await addPoints(selectedPlayer._id, points);
+          await addPoints(selectedPlayer._id, points, selectedPlayer.name);
           e.target.value = '';
           resetFlow();
           submitting.current = false;
@@ -128,13 +144,13 @@ function App() {
       } else if (step === 'rebounds') {
         if (input === 'o') {
           submitting.current = true;
-          await addRebound(selectedPlayer._id, 'offensive');
+          await addRebound(selectedPlayer._id, 'offensive', selectedPlayer.name);
           e.target.value = '';
           resetFlow();
           submitting.current = false;
         } else if (input === 'd') {
           submitting.current = true;
-          await addRebound(selectedPlayer._id, 'defensive');
+          await addRebound(selectedPlayer._id, 'defensive', selectedPlayer.name);
           e.target.value = '';
           resetFlow();
           submitting.current = false;
@@ -163,7 +179,7 @@ function App() {
           const player = players.find(p => p.number === num && p.team === foulTeam);
           if (player) {
             submitting.current = true;
-            await addFoul(player._id);
+            await addFoul(player._id, player.name);
             e.target.value = '';
             resetFlow();
             submitting.current = false;
@@ -183,7 +199,7 @@ function App() {
     }
   };
 
-  const addPoints = async (playerId, pointsToAdd) => {
+  const addPoints = async (playerId, pointsToAdd, playerName) => {
     try {
       await fetch(`${API_URL}/api/players/${playerId}/score`, {
         method: 'PATCH',
@@ -191,12 +207,13 @@ function App() {
         body: JSON.stringify({ pointsToAdd })
       });
       await fetchPlayers();
+      pushHistory({ type: 'points', playerId, value: pointsToAdd, label: `${playerName} +${pointsToAdd}pts` });
     } catch (error) {
       console.error('Error adding points:', error);
     }
   };
 
-  const addRebound = async (playerId, type) => {
+  const addRebound = async (playerId, type, playerName) => {
     try {
       await fetch(`${API_URL}/api/players/${playerId}/rebound`, {
         method: 'PATCH',
@@ -204,20 +221,51 @@ function App() {
         body: JSON.stringify({ type })
       });
       await fetchPlayers();
+      pushHistory({ type: 'rebound', playerId, reboundType: type, label: `${playerName} +1 ${type.slice(0,3)} reb` });
     } catch (error) {
       console.error('Error adding rebound:', error);
     }
   };
 
-  const addFoul = async (playerId) => {
+  const addFoul = async (playerId, playerName) => {
     try {
       await fetch(`${API_URL}/api/players/${playerId}/foul`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' }
       });
       await fetchPlayers();
+      pushHistory({ type: 'foul', playerId, label: `${playerName} +1 foul` });
     } catch (error) {
       console.error('Error adding foul:', error);
+    }
+  };
+
+  const undoLast = async () => {
+    if (actionHistory.length === 0) return;
+    const last = actionHistory[actionHistory.length - 1];
+    try {
+      if (last.type === 'points') {
+        await fetch(`${API_URL}/api/players/${last.playerId}/undo-score`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pointsToRemove: last.value })
+        });
+      } else if (last.type === 'rebound') {
+        await fetch(`${API_URL}/api/players/${last.playerId}/undo-rebound`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: last.reboundType })
+        });
+      } else if (last.type === 'foul') {
+        await fetch(`${API_URL}/api/players/${last.playerId}/undo-foul`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      await fetchPlayers();
+      setActionHistory(prev => prev.slice(0, -1));
+    } catch (err) {
+      console.error('Undo failed:', err);
     }
   };
 
@@ -454,6 +502,9 @@ function App() {
         inputRef={inputRef}
         onKeyPress={handleKeyPress}
         onEndGame={endGame}
+        onPlayerSelect={handlePlayerSelect}
+        actionHistory={actionHistory}
+        onUndo={undoLast}
       />
     </div>
   );

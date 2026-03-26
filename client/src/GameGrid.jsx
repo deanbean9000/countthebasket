@@ -63,6 +63,9 @@ function GameGrid({
   inputRef,
   onKeyPress,
   onEndGame,
+  onPlayerSelect,
+  actionHistory = [],
+  onUndo,
 }) {
   const [layout,  setLayout]  = useState(() => loadSaved()?.layout  ?? DEFAULT_LAYOUT);
   const [visible, setVisible] = useState(() => loadSaved()?.visible ?? DEFAULT_VISIBLE);
@@ -146,11 +149,11 @@ function GameGrid({
       case 'scoreboard':
         return <ScoreboardWidget homeTeamName={homeTeamName} awayTeamName={awayTeamName} homeStats={homeStats} awayStats={awayStats} onEndGame={onEndGame} />;
       case 'homeRoster':
-        return <RosterWidget teamName={homeTeamName} players={players} team="Home" />;
+        return <RosterWidget teamName={homeTeamName} players={players} team="Home" onPlayerSelect={onPlayerSelect} />;
       case 'quickEntry':
-        return <QuickEntryWidget prompt={prompt} inputRef={inputRef} onKeyPress={onKeyPress} />;
+        return <QuickEntryWidget prompt={prompt} inputRef={inputRef} onKeyPress={onKeyPress} actionHistory={actionHistory} onUndo={onUndo} />;
       case 'awayRoster':
-        return <RosterWidget teamName={awayTeamName} players={players} team="Away" />;
+        return <RosterWidget teamName={awayTeamName} players={players} team="Away" onPlayerSelect={onPlayerSelect} />;
       case 'playerCards':
         return <PlayerCardsWidget homeTeamName={homeTeamName} awayTeamName={awayTeamName} homeStats={homeStats} awayStats={awayStats} players={players} />;
       default:

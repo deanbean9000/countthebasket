@@ -5,21 +5,39 @@ function GameHistory({ leagueId, leagueName, apiUrl, onBack }) {
   const [summaries, setSummaries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [deleting, setDeleting] = useState(null); // id currently being deleted
+
+  const fetchSummaries = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/game-summaries?leagueId=${leagueId}`);
+      const data = await res.json();
+      setSummaries(data);
+    } catch (err) {
+      console.error('Failed to load game summaries:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSummaries = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/api/game-summaries?leagueId=${leagueId}`);
-        const data = await res.json();
-        setSummaries(data);
-      } catch (err) {
-        console.error('Failed to load game summaries:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchSummaries();
   }, [leagueId, apiUrl]);
+
+  const handleDelete = async (id, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Delete this game? This cannot be undone.')) return;
+    setDeleting(id);
+    try {
+      await fetch(`${apiUrl}/api/game-summaries/${id}`, { method: 'DELETE' });
+      setSummaries(prev => prev.filter(s => s._id !== id));
+      if (selected?._id === id) setSelected(null);
+    } catch (err) {
+      console.error('Failed to delete game:', err);
+      alert('Could not delete game. Please try again.');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   if (selected) {
     const homeP = selected.players.filter(p => p.team === 'Home');
@@ -30,7 +48,16 @@ function GameHistory({ leagueId, leagueName, apiUrl, onBack }) {
     return (
       <div className="app">
         <div className="gh-container">
-          <button className="gh-back-btn" onClick={() => setSelected(null)}>← Back to Games</button>
+          <div className="gh-detail-topbar">
+            <button className="gh-back-btn" onClick={() => setSelected(null)}>← Back to Games</button>
+            <button
+              className="btn-delete-game"
+              onClick={(e) => handleDelete(selected._id, e)}
+              disabled={deleting === selected._id}
+            >
+              {deleting === selected._id ? 'Deleting…' : '🗑 Delete Game'}
+            </button>
+          </div>
           <div className="gh-detail-date">{date}</div>
           <h1 className="summary-title">🏀 Game Summary</h1>
           <div className="summary-scoreboard">
@@ -121,26 +148,36 @@ function GameHistory({ leagueId, leagueName, apiUrl, onBack }) {
                 hour: '2-digit', minute: '2-digit'
               });
               return (
-                <button key={s._id} className="gh-game-card" onClick={() => setSelected(s)}>
-                  <div className="gh-game-date">{date} · {time}</div>
-                  <div className="gh-game-scoreline">
-                    <span className={`gh-team ${s.winner === s.homeTeamName ? 'gh-winner' : ''}`}>
-                      {s.homeTeamName}
-                    </span>
-                    <span className="gh-scores">
-                      <span className={s.winner === s.homeTeamName ? 'gh-winning-score' : ''}>{s.homeScore}</span>
-                      <span className="gh-dash">–</span>
-                      <span className={s.winner === s.awayTeamName ? 'gh-winning-score' : ''}>{s.awayScore}</span>
-                    </span>
-                    <span className={`gh-team ${s.winner === s.awayTeamName ? 'gh-winner' : ''}`}>
-                      {s.awayTeamName}
-                    </span>
-                  </div>
-                  {s.winner
-                    ? <div className="gh-result">🏆 {s.winner} won</div>
-                    : <div className="gh-result">Tie game</div>
-                  }
-                </button>
+                <div key={s._id} className="gh-game-card-wrapper">
+                  <button className="gh-game-card" onClick={() => setSelected(s)}>
+                    <div className="gh-game-date">{date} · {time}</div>
+                    <div className="gh-game-scoreline">
+                      <span className={`gh-team ${s.winner === s.homeTeamName ? 'gh-winner' : ''}`}>
+                        {s.homeTeamName}
+                      </span>
+                      <span className="gh-scores">
+                        <span className={s.winner === s.homeTeamName ? 'gh-winning-score' : ''}>{s.homeScore}</span>
+                        <span className="gh-dash">–</span>
+                        <span className={s.winner === s.awayTeamName ? 'gh-winning-score' : ''}>{s.awayScore}</span>
+                      </span>
+                      <span className={`gh-team ${s.winner === s.awayTeamName ? 'gh-winner' : ''}`}>
+                        {s.awayTeamName}
+                      </span>
+                    </div>
+                    {s.winner
+                      ? <div className="gh-result">🏆 {s.winner} won</div>
+                      : <div className="gh-result">Tie game</div>
+                    }
+                  </button>
+                  <button
+                    className="btn-delete-card"
+                    onClick={(e) => handleDelete(s._id, e)}
+                    disabled={deleting === s._id}
+                    title="Delete this game"
+                  >
+                    {deleting === s._id ? '…' : '🗑'}
+                  </button>
+                </div>
               );
             })}
           </div>

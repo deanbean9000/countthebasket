@@ -81,6 +81,9 @@ app.get('/api/players', async (req, res) => {
 
 app.patch('/api/players/:id/score', async (req, res) => {
   const { pointsToAdd } = req.body;
+  if (!Number.isInteger(pointsToAdd) || pointsToAdd < 1 || pointsToAdd > 3) {
+    return res.status(400).json({ message: 'pointsToAdd must be 1, 2, or 3.' });
+  }
   try {
     const player = await Player.findByIdAndUpdate(
       req.params.id,
@@ -95,6 +98,9 @@ app.patch('/api/players/:id/score', async (req, res) => {
 
 app.patch('/api/players/:id/rebound', async (req, res) => {
   const { type } = req.body;
+  if (!['offensive', 'defensive'].includes(type)) {
+    return res.status(400).json({ message: 'type must be offensive or defensive.' });
+  }
   try {
     const updateField = type === 'offensive' ? 'offensiveRebounds' : 'defensiveRebounds';
     const player = await Player.findByIdAndUpdate(
@@ -113,6 +119,66 @@ app.patch('/api/players/:id/foul', async (req, res) => {
     const player = await Player.findByIdAndUpdate(
       req.params.id,
       { $inc: { fouls: 1 } },
+      { new: true }
+    );
+    res.json(player);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Undo endpoints — decrement stats, floored at 0 via $max
+app.patch('/api/players/:id/undo-score', async (req, res) => {
+  const { pointsToRemove } = req.body;
+  if (!Number.isInteger(pointsToRemove) || pointsToRemove < 1 || pointsToRemove > 3) {
+    return res.status(400).json({ message: 'pointsToRemove must be 1, 2, or 3.' });
+  }
+  try {
+    const current = await Player.findById(req.params.id);
+    if (!current) return res.status(404).json({ message: 'Player not found.' });
+    const player = await Player.findByIdAndUpdate(
+      req.params.id,
+      { $set: { points: Math.max(0, current.points - pointsToRemove) } },
+      { new: true }
+    );
+    res.json(player);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+app.patch('/api/players/:id/undo-rebound', async (req, res) => {
+  const { type } = req.body;
+  if (!['offensive', 'defensive'].includes(type)) {
+    return res.status(400).json({ message: 'type must be offensive or defensive.' });
+  }
+  try {
+    const current = await Player.findById(req.params.id);
+    if (!current) return res.status(404).json({ message: 'Player not found.' });
+    const subField = type === 'offensive' ? 'offensiveRebounds' : 'defensiveRebounds';
+    const player = await Player.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          rebounds: Math.max(0, current.rebounds - 1),
+          [subField]: Math.max(0, current[subField] - 1),
+        }
+      },
+      { new: true }
+    );
+    res.json(player);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+app.patch('/api/players/:id/undo-foul', async (req, res) => {
+  try {
+    const current = await Player.findById(req.params.id);
+    if (!current) return res.status(404).json({ message: 'Player not found.' });
+    const player = await Player.findByIdAndUpdate(
+      req.params.id,
+      { $set: { fouls: Math.max(0, (current.fouls || 0) - 1) } },
       { new: true }
     );
     res.json(player);
@@ -159,10 +225,22 @@ app.post('/api/game-summaries', async (req, res) => {
 
 app.get('/api/game-summaries', async (req, res) => {
   const { leagueId } = req.query;
-  if (!leagueId) return res.status(400).json({ message: 'leagueId is required.' });
+  if (!leagueId || !mongoose.Types.ObjectId.isValid(leagueId)) {
+    return res.status(400).json({ message: 'leagueId is required and must be a valid ID.' });
+  }
   try {
     const summaries = await GameSummary.find({ leagueId }).sort({ playedAt: -1 });
     res.json(summaries);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.delete('/api/game-summaries/:id', async (req, res) => {
+  try {
+    const deleted = await GameSummary.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Game not found.' });
+    res.json({ message: 'Game deleted.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

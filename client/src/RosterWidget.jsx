@@ -8,17 +8,22 @@ import Widget from './Widget';
  * @param {array}  players   - Full players array (component filters by team prop)
  * @param {string} team      - 'Home' | 'Away' — which team to show
  */
-function RosterWidget({ teamName, players, team }) {
+function RosterWidget({ teamName, players, team, onPlayerSelect }) {
   const teamPlayers = players.filter(p => p.team === team);
 
   return (
     <Widget id={`roster-${team.toLowerCase()}`} title={`${teamName} Roster`}>
       <div className="roster-list">
         {teamPlayers.map(player => (
-          <div key={player._id} className="roster-item">
+          <button
+            key={player._id}
+            className="roster-item roster-item--clickable"
+            onClick={() => onPlayerSelect && onPlayerSelect(player)}
+            title={`Select ${player.name}`}
+          >
             <span className="roster-number">#{player.number}</span>
             <span className="roster-name">{player.name}</span>
-          </div>
+          </button>
         ))}
         {teamPlayers.length === 0 && (
           <p className="roster-empty">No players loaded</p>
