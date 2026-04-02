@@ -6,8 +6,8 @@
 
 body {
   font-family: 'Arial', sans-serif;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  color: white;
+  background: var(--bg-gradient, linear-gradient(135deg, #1e3c72 0%, #2a5298 100%));
+  color: var(--text-color, white);
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -337,6 +337,42 @@ body {
 .stat-badge.fouls {
   background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
 }
+/* Foul threshold variants */
+.stat-badge.fouls.fouls--warn {
+  background: linear-gradient(135deg, #f9a825 0%, #f57f17 100%);
+  color: #1a1a1a;
+  animation: foul-pulse 1.8s ease-in-out 2;
+}
+.stat-badge.fouls.fouls--danger {
+  background: linear-gradient(135deg, #e65100 0%, #bf360c 100%);
+  animation: foul-pulse 1.4s ease-in-out 3;
+}
+.stat-badge.fouls.fouls--out {
+  background: linear-gradient(135deg, #b71c1c 0%, #880e0e 100%);
+  box-shadow: 0 0 10px rgba(255, 50, 50, 0.6);
+  animation: foul-flash 0.7s ease-in-out 4;
+}
+
+/* Player card foul border variants */
+.player-card--foul-warn {
+  border-left-color: #f9a825;
+}
+.player-card--foul-danger {
+  border-left-color: #e65100;
+}
+.player-card--foul-out {
+  border-left-color: #e53935;
+  background: rgba(183, 28, 28, 0.15);
+}
+
+@keyframes foul-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes foul-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; box-shadow: 0 0 18px rgba(255, 50, 50, 0.9); }
+}
 
 /* Game Summary */
 .summary-container {
@@ -551,4 +587,115 @@ body {
   .roster-sidebar {
     grid-template-columns: 1fr;
   }
+}
+
+/* ─── Roster foul indicators ─────────────────────────────────────────────── */
+.roster-item--foul-warn  { border-left: 3px solid #f9a825; }
+.roster-item--foul-danger { border-left: 3px solid #e65100; }
+.roster-item--foul-out {
+  border-left: 3px solid #e53935;
+  opacity: 0.75;
+}
+
+.roster-foul-pip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.roster-foul-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ─── Foul warning toast ─────────────────────────────────────────────────── */
+.foul-warning-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px 14px 18px;
+  border-radius: 14px;
+  min-width: 300px;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  animation: toast-slide-in 0.3s ease;
+}
+
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.foul-warning-toast--warn {
+  background: linear-gradient(135deg, #f57f17, #f9a825);
+  color: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.foul-warning-toast--danger {
+  background: linear-gradient(135deg, #bf360c, #e65100);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.foul-warning-toast--out {
+  background: linear-gradient(135deg, #7f0000, #b71c1c);
+  color: #fff;
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  box-shadow: 0 8px 32px rgba(183, 28, 28, 0.6);
+  animation: toast-slide-in 0.3s ease, toast-shake 0.4s ease 0.3s;
+}
+
+@keyframes toast-shake {
+  0%, 100% { transform: translateX(-50%); }
+  20%       { transform: translateX(calc(-50% - 6px)); }
+  40%       { transform: translateX(calc(-50% + 6px)); }
+  60%       { transform: translateX(calc(-50% - 4px)); }
+  80%       { transform: translateX(calc(-50% + 4px)); }
+}
+
+.foul-warning-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.foul-warning-body {
+  flex: 1;
+  text-align: left;
+}
+
+.foul-warning-body strong {
+  font-size: 1rem;
+  display: block;
+}
+
+.foul-warning-msg {
+  font-size: 0.82rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.foul-warning-dismiss {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.55;
+  padding: 2px 4px;
+  color: inherit;
+  flex-shrink: 0;
+  line-height: 1;
+  border-radius: 4px;
+}
+.foul-warning-dismiss:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
 }

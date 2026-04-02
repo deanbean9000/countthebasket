@@ -23,6 +23,7 @@ function App() {
   const [foulTeam, setFoulTeam] = useState(null);
   const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g) or [F]oul:');
   const [actionHistory, setActionHistory] = useState([]); // stack of undoable actions
+  const [foulWarning, setFoulWarning] = useState(null); // { playerName, foulCount }
   const inputRef = useRef(null);
   const submitting = useRef(false);
 
@@ -229,12 +230,18 @@ function App() {
 
   const addFoul = async (playerId, playerName) => {
     try {
+      const currentPlayer = players.find(p => p._id === playerId);
+      const newFouls = (currentPlayer?.fouls || 0) + 1;
       await fetch(`${API_URL}/api/players/${playerId}/foul`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' }
       });
       await fetchPlayers();
       pushHistory({ type: 'foul', playerId, label: `${playerName} +1 foul` });
+      if (newFouls >= 3) {
+        setFoulWarning({ playerName, foulCount: newFouls });
+        setTimeout(() => setFoulWarning(null), 5000);
+      }
     } catch (error) {
       console.error('Error adding foul:', error);
     }
@@ -492,6 +499,25 @@ function App() {
 
   return (
     <div className="app">
+      {foulWarning && (
+        <div
+          className={`foul-warning-toast foul-warning-toast--${foulWarning.foulCount >= 5 ? 'out' : foulWarning.foulCount === 4 ? 'danger' : 'warn'}`}
+          onClick={() => setFoulWarning(null)}
+        >
+          <span className="foul-warning-icon">{foulWarning.foulCount >= 5 ? '🚨' : foulWarning.foulCount === 4 ? '⚠️' : '⚡'}</span>
+          <div className="foul-warning-body">
+            <strong>{foulWarning.playerName}</strong> — {foulWarning.foulCount} Fouls
+            <div className="foul-warning-msg">
+              {foulWarning.foulCount >= 5
+                ? 'FOUL OUT — Player must be removed!'
+                : foulWarning.foulCount === 4
+                ? 'Danger zone — one more and they\'re out!'
+                : 'In foul trouble — 3 fouls!'}
+            </div>
+          </div>
+          <button className="foul-warning-dismiss" aria-label="Dismiss">✕</button>
+        </div>
+      )}
       <GameGrid
         homeTeamName={homeTeamName}
         awayTeamName={awayTeamName}

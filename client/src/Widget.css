@@ -1,6 +1,6 @@
 /* ─── Widget Shell ──────────────────────────────────────────────────────── */
 .widget {
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--widget-bg, rgba(0, 0, 0, 0.28));
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
@@ -10,8 +10,8 @@
 
 .widget-header {
   padding: 6px 16px;
-  background: rgba(255, 215, 0, 0.07);
-  border-bottom: 1px solid rgba(255, 215, 0, 0.18);
+  background: var(--widget-header-bg, rgba(255, 215, 0, 0.07));
+  border-bottom: 1px solid var(--widget-header-border, rgba(255, 215, 0, 0.18));
   display: flex;
   align-items: center;
 }
@@ -21,7 +21,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.13em;
-  color: rgba(255, 215, 0, 0.65);
+  color: var(--accent-dim, rgba(255, 215, 0, 0.65));
   user-select: none;
 }
 
