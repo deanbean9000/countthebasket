@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from './firebase';
 import './App.css';
+import Auth from './Auth';
 import LeagueGate from './LeagueGate';
 import Hero from './Hero';
 import RosterSetup from './RosterSetup';
@@ -24,11 +27,21 @@ function App() {
   const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g) or [F]oul:');
   const [actionHistory, setActionHistory] = useState([]); // stack of undoable actions
   const [foulWarning, setFoulWarning] = useState(null); // { playerName, foulCount }
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const inputRef = useRef(null);
   const submitting = useRef(false);
 
   const pushHistory = (entry) =>
     setActionHistory(prev => [...prev.slice(-19), entry]); // keep last 20
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setAuthLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   // --- CODESPACES CONNECTION FIX ---
   // This detects your current URL and forces it to point to the backend port 3001
@@ -338,6 +351,16 @@ function App() {
     setView('game');
   };
 
+  if (authLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: '#ffd700', fontSize: '1.5rem' }}>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Auth />;
+  }
+
+  const handleLogout = () => signOut(auth);
+
   // Show end-of-game summary
   if (view === 'summary') {
     const homeP = summaryPlayers.filter(p => p.team === 'Home');
@@ -424,81 +447,110 @@ function App() {
   // League gate — must enter a league first
   if (view === 'leagueGate') {
     return (
-      <LeagueGate
-        onEnterLeague={(l) => { setLeague(l); setView('hero'); }}
-      />
+      <>
+        <button
+          onClick={handleLogout}
+          style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          Logout
+        </button>
+        <LeagueGate
+          onEnterLeague={(l) => { setLeague(l); setView('hero'); }}
+        />
+      </>
     );
   }
 
   // Show hero page
   if (view === 'hero') {
     return (
-      <Hero
-        league={league}
-        onCreateRoster={() => setView('createRoster')}
-        onNewGame={() => setView('newGame')}
-        onViewHistory={() => setView('gameHistory')}
-        onViewStandings={() => setView('standings')}
-        onViewLeaderboard={() => setView('leaderboard')}
-        onLeaveLeague={() => { setLeague(null); setView('leagueGate'); }}
-      />
+      <>
+        <button onClick={handleLogout} style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
+        <Hero
+          league={league}
+          onCreateRoster={() => setView('createRoster')}
+          onNewGame={() => setView('newGame')}
+          onViewHistory={() => setView('gameHistory')}
+          onViewStandings={() => setView('standings')}
+          onViewLeaderboard={() => setView('leaderboard')}
+          onLeaveLeague={() => { setLeague(null); setView('leagueGate'); }}
+        />
+      </>
     );
   }
 
   // Show create roster page
   if (view === 'createRoster') {
-    return <RosterSetup leagueId={league._id} onBack={() => setView('hero')} />;
+    return (
+      <>
+        <button onClick={handleLogout} style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
+        <RosterSetup leagueId={league._id} onBack={() => setView('hero')} />
+      </>
+    );
   }
 
   // Show leaderboard
   if (view === 'leaderboard') {
     return (
-      <Leaderboard
-        leagueId={league._id}
-        leagueName={league.name}
-        apiUrl={API_URL}
-        onBack={() => setView('hero')}
-      />
+      <>
+        <button onClick={handleLogout} style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
+        <Leaderboard
+          leagueId={league._id}
+          leagueName={league.name}
+          apiUrl={API_URL}
+          onBack={() => setView('hero')}
+        />
+      </>
     );
   }
 
   // Show standings
   if (view === 'standings') {
     return (
-      <Standing
-        leagueId={league._id}
-        leagueName={league.name}
-        apiUrl={API_URL}
-        onBack={() => setView('hero')}
-      />
+      <>
+        <button onClick={handleLogout} style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
+        <Standing
+          leagueId={league._id}
+          leagueName={league.name}
+          apiUrl={API_URL}
+          onBack={() => setView('hero')}
+        />
+      </>
     );
   }
 
   // Show game history
   if (view === 'gameHistory') {
     return (
-      <GameHistory
-        leagueId={league._id}
-        leagueName={league.name}
-        apiUrl={API_URL}
-        onBack={() => setView('hero')}
-      />
+      <>
+        <button onClick={handleLogout} style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
+        <GameHistory
+          leagueId={league._id}
+          leagueName={league.name}
+          apiUrl={API_URL}
+          onBack={() => setView('hero')}
+        />
+      </>
     );
   }
 
   // Show new game setup
   if (view === 'newGame') {
     return (
-      <NewGame
-        leagueId={league._id}
-        onStartGame={handleStartGame}
-        onBack={() => setView('hero')}
-      />
+      <>
+        <button onClick={handleLogout} style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
+        <NewGame
+          leagueId={league._id}
+          onStartGame={handleStartGame}
+          onBack={() => setView('hero')}
+        />
+      </>
     );
   }
 
   return (
     <div className="app">
+      <button onClick={handleLogout} style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, padding: '8px 18px', background: '#ffd700', color: '#1e3c72', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
       {foulWarning && (
         <div
           className={`foul-warning-toast foul-warning-toast--${foulWarning.foulCount >= 5 ? 'out' : foulWarning.foulCount === 4 ? 'danger' : 'warn'}`}
