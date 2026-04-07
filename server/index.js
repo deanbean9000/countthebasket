@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
+import admin from 'firebase-admin';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { testDbConnection } from './db.js';
@@ -11,20 +14,69 @@ import GameSummary from './models/GameSummary.js';
 
 const hashKey = (key) => crypto.createHash('sha256').update(key).digest('hex');
 
+// ── Firebase Admin SDK init ───────────────────────────────────────────────────
+// Set FIREBASE_SERVICE_ACCOUNT env var to the contents of your serviceAccountKey.json
+if (!admin.apps.length) {
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : undefined;
+  admin.initializeApp({
+    credential: serviceAccount
+      ? admin.credential.cert(serviceAccount)
+      : admin.credential.applicationDefault(),
+    projectId: 'countthebasket-28508',
+  });
+}
+
 const app = express();
 
-// 1. MIDDLEWARE 
-app.use(express.json()); // Moved up so all routes can read JSON data
+// 1. MIDDLEWARE
+app.use(helmet()); // Secure HTTP headers
+
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please try again later.' },
+}));
+
+app.use(express.json());
 
 app.use(cors({
   origin: [
-    'https://countthebasket.onrender.com',   // Original URL
-    'https://countthebasket-1.onrender.com', // THE NEW URL FROM YOUR ERROR
-    /\.github\.dev$/,                       // Codespaces
-    'http://localhost:5173'                 // Local testing
+    'https://countthebasket-28508.web.app',
+    'https://countthebasket-28508.firebaseapp.com',
   ],
-  credentials: true
+  credentials: true,
 }));
+
+// ── Auth middleware: verify Firebase ID token ─────────────────────────────────
+const verifyFirebaseToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized: No token provided.' });
+  }
+  const idToken = authHeader.slice(7);
+  try {
+    req.user = await admin.auth().verifyIdToken(idToken);
+    next();
+  } catch {
+    return res.status(401).json({ message: 'Unauthorized: Invalid or expired token.' });
+  }
+};
+
+// ── Body sanitizer: strip any fields not in the Roster schema ─────────────────
+const ALLOWED_ROSTER_FIELDS = new Set(['name', 'homeTeamName', 'awayTeamName', 'leagueId', 'players']);
+
+const sanitizeRosterBody = (req, res, next) => {
+  if (req.body && typeof req.body === 'object') {
+    req.body = Object.fromEntries(
+      Object.entries(req.body).filter(([key]) => ALLOWED_ROSTER_FIELDS.has(key))
+    );
+  }
+  next();
+};
 
 // 2. HEALTH CHECK
 app.get('/', (req, res) => {
@@ -296,8 +348,8 @@ app.get('/api/season-stats', async (req, res) => {
   }
 });
 
-// 7. ROSTER ROUTES
-app.get('/api/rosters', async (req, res) => {
+// 7. ROSTER ROUTES  (protected — requires a valid Firebase ID token)
+app.get('/api/rosters', verifyFirebaseToken, async (req, res) => {
   try {
     const { leagueId } = req.query;
     const filter = leagueId ? { leagueId } : {};
@@ -308,7 +360,7 @@ app.get('/api/rosters', async (req, res) => {
   }
 });
 
-app.get('/api/rosters/:id', async (req, res) => {
+app.get('/api/rosters/:id', verifyFirebaseToken, async (req, res) => {
   try {
     const roster = await Roster.findById(req.params.id);
     res.json(roster);
@@ -317,7 +369,7 @@ app.get('/api/rosters/:id', async (req, res) => {
   }
 });
 
-app.post('/api/rosters', async (req, res) => {
+app.post('/api/rosters', verifyFirebaseToken, sanitizeRosterBody, async (req, res) => {
   try {
     const roster = new Roster(req.body);
     const newRoster = await roster.save();
@@ -327,7 +379,7 @@ app.post('/api/rosters', async (req, res) => {
   }
 });
 
-app.delete('/api/rosters/:id', async (req, res) => {
+app.delete('/api/rosters/:id', verifyFirebaseToken, async (req, res) => {
   try {
     await Roster.findByIdAndDelete(req.params.id);
     res.json({ message: 'Roster deleted' });

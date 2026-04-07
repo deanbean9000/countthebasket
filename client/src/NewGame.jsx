@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { auth } from './firebase';
 import './NewGame.css';
 
 function NewGame({ leagueId, onStartGame, onBack }) {
@@ -17,7 +18,12 @@ function NewGame({ leagueId, onStartGame, onBack }) {
   const fetchRosters = async () => {
     try {
       setError('');
-      const res = await fetch(`${API_URL}/api/rosters?leagueId=${leagueId}`);
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`${API_URL}/api/rosters?leagueId=${leagueId}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setRosters(data);

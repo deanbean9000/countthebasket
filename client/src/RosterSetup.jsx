@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { auth } from './firebase';
 import './RosterSetup.css';
 
 function RosterSetup({ leagueId, onBack }) {
@@ -53,9 +54,13 @@ function RosterSetup({ leagueId, onBack }) {
         players: players.map(p => ({ ...p, team: 'Home' })),
       };
 
+      const token = await auth.currentUser?.getIdToken();
       const response = await fetch(`${API_URL}/api/rosters`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify(rosterData),
       });
 

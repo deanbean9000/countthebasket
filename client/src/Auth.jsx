@@ -12,6 +12,7 @@ const Auth = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (password.length > 100) return setError("Password is too long.");
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
