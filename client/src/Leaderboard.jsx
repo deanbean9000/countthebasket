@@ -4,6 +4,9 @@ import './Leaderboard.css';
 const STAT_TABS = [
   { key: 'ppg', label: 'PPG', full: 'Points Per Game',   emoji: '🔥' },
   { key: 'rpg', label: 'RPG', full: 'Rebounds Per Game', emoji: '💪' },
+  { key: 'apg', label: 'APG', full: 'Assists Per Game',  emoji: '🤝' },
+  { key: 'spg', label: 'SPG', full: 'Steals Per Game',   emoji: '🫳' },
+  { key: 'bpg', label: 'BPG', full: 'Blocks Per Game',   emoji: '✋' },
   { key: 'fpg', label: 'FPG', full: 'Fouls Per Game',    emoji: '🚨' },
 ];
 
@@ -144,6 +147,24 @@ function Leaderboard({ leagueId, leagueName, apiUrl, onBack }) {
                     <th className="lb-th-sortable" onClick={() => handleSort('rpg')}>
                       RPG <SortArrow col="rpg" />
                     </th>
+                    <th className="lb-th-sortable" onClick={() => handleSort('totalAssists')}>
+                      AST <SortArrow col="totalAssists" />
+                    </th>
+                    <th className="lb-th-sortable" onClick={() => handleSort('apg')}>
+                      APG <SortArrow col="apg" />
+                    </th>
+                    <th className="lb-th-sortable" onClick={() => handleSort('totalSteals')}>
+                      STL <SortArrow col="totalSteals" />
+                    </th>
+                    <th className="lb-th-sortable" onClick={() => handleSort('spg')}>
+                      SPG <SortArrow col="spg" />
+                    </th>
+                    <th className="lb-th-sortable" onClick={() => handleSort('totalBlocks')}>
+                      BLK <SortArrow col="totalBlocks" />
+                    </th>
+                    <th className="lb-th-sortable" onClick={() => handleSort('bpg')}>
+                      BPG <SortArrow col="bpg" />
+                    </th>
                     <th className="lb-th-sortable" onClick={() => handleSort('totalFouls')}>
                       FOULS <SortArrow col="totalFouls" />
                     </th>
@@ -164,6 +185,12 @@ function Leaderboard({ leagueId, leagueName, apiUrl, onBack }) {
                       <td className="lb-td-avg lb-td-pts">{(player.ppg ?? 0).toFixed(1)}</td>
                       <td>{player.totalRebounds}</td>
                       <td className="lb-td-avg">{(player.rpg ?? 0).toFixed(1)}</td>
+                      <td>{player.totalAssists ?? 0}</td>
+                      <td className="lb-td-avg">{(player.apg ?? 0).toFixed(1)}</td>
+                      <td>{player.totalSteals ?? 0}</td>
+                      <td className="lb-td-avg">{(player.spg ?? 0).toFixed(1)}</td>
+                      <td>{player.totalBlocks ?? 0}</td>
+                      <td className="lb-td-avg">{(player.bpg ?? 0).toFixed(1)}</td>
                       <td>{player.totalFouls}</td>
                       <td className="lb-td-avg lb-td-fouls">{(player.fpg ?? 0).toFixed(1)}</td>
                       <td className="lb-td-offdef">

@@ -44,10 +44,17 @@ app.use(rateLimit({
 app.use(express.json());
 
 app.use(cors({
-  origin: [
-    'https://countthebasket-28508.web.app',
-    'https://countthebasket-28508.firebaseapp.com',
-  ],
+  origin: (origin, callback) => {
+    const allowed = [
+      'https://countthebasket-28508.web.app',
+      'https://countthebasket-28508.firebaseapp.com',
+    ];
+    // Allow requests with no origin (e.g. curl, Postman) and localhost/Codespaces dev origins
+    if (!origin || allowed.includes(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin) || origin.includes('.app.github.dev')) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 
@@ -239,10 +246,59 @@ app.patch('/api/players/:id/undo-foul', async (req, res) => {
   }
 });
 
+// Assists / Steals / Blocks
+app.patch('/api/players/:id/assist', async (req, res) => {
+  try {
+    const player = await Player.findByIdAndUpdate(req.params.id, { $inc: { assists: 1 } }, { new: true });
+    res.json(player);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.patch('/api/players/:id/steal', async (req, res) => {
+  try {
+    const player = await Player.findByIdAndUpdate(req.params.id, { $inc: { steals: 1 } }, { new: true });
+    res.json(player);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.patch('/api/players/:id/block', async (req, res) => {
+  try {
+    const player = await Player.findByIdAndUpdate(req.params.id, { $inc: { blocks: 1 } }, { new: true });
+    res.json(player);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.patch('/api/players/:id/undo-assist', async (req, res) => {
+  try {
+    const current = await Player.findById(req.params.id);
+    if (!current) return res.status(404).json({ message: 'Player not found.' });
+    const player = await Player.findByIdAndUpdate(req.params.id, { $set: { assists: Math.max(0, (current.assists || 0) - 1) } }, { new: true });
+    res.json(player);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.patch('/api/players/:id/undo-steal', async (req, res) => {
+  try {
+    const current = await Player.findById(req.params.id);
+    if (!current) return res.status(404).json({ message: 'Player not found.' });
+    const player = await Player.findByIdAndUpdate(req.params.id, { $set: { steals: Math.max(0, (current.steals || 0) - 1) } }, { new: true });
+    res.json(player);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.patch('/api/players/:id/undo-block', async (req, res) => {
+  try {
+    const current = await Player.findById(req.params.id);
+    if (!current) return res.status(404).json({ message: 'Player not found.' });
+    const player = await Player.findByIdAndUpdate(req.params.id, { $set: { blocks: Math.max(0, (current.blocks || 0) - 1) } }, { new: true });
+    res.json(player);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
 app.post('/api/players/reset', async (req, res) => {
   try {
     await Player.updateMany({}, { 
-      $set: { points: 0, rebounds: 0, offensiveRebounds: 0, defensiveRebounds: 0, fouls: 0 } 
+      $set: { points: 0, rebounds: 0, offensiveRebounds: 0, defensiveRebounds: 0, fouls: 0, assists: 0, steals: 0, blocks: 0 } 
     });
     const players = await Player.find().sort({ team: 1, number: 1 });
     res.json(players);
@@ -322,6 +378,9 @@ app.get('/api/season-stats', async (req, res) => {
           totalOffRebounds:  { $sum: '$players.offensiveRebounds' },
           totalDefRebounds:  { $sum: '$players.defensiveRebounds' },
           totalFouls:        { $sum: '$players.fouls' },
+          totalAssists:      { $sum: '$players.assists' },
+          totalSteals:       { $sum: '$players.steals' },
+          totalBlocks:       { $sum: '$players.blocks' },
         }
       },
       {
@@ -335,9 +394,15 @@ app.get('/api/season-stats', async (req, res) => {
           totalOffRebounds: 1,
           totalDefRebounds: 1,
           totalFouls:       1,
+          totalAssists:     1,
+          totalSteals:      1,
+          totalBlocks:      1,
           ppg: { $round: [{ $divide: ['$totalPoints',   '$games'] }, 1] },
           rpg: { $round: [{ $divide: ['$totalRebounds', '$games'] }, 1] },
           fpg: { $round: [{ $divide: ['$totalFouls',    '$games'] }, 1] },
+          apg: { $round: [{ $divide: ['$totalAssists',  '$games'] }, 1] },
+          spg: { $round: [{ $divide: ['$totalSteals',   '$games'] }, 1] },
+          bpg: { $round: [{ $divide: ['$totalBlocks',   '$games'] }, 1] },
         }
       },
       { $sort: { ppg: -1 } }

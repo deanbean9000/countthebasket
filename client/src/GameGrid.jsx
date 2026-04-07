@@ -206,6 +206,8 @@ function GameGrid({
   onPlayerSelect,
   actionHistory = [],
   onUndo,
+  enabledStats = { assists: false, steals: false, blocks: false },
+  onEnabledStatsChange,
 }) {
   const [layout,  setLayout]  = useState(() => loadSaved()?.layout  ?? DEFAULT_LAYOUT);
   const [visible, setVisible] = useState(() => loadSaved()?.visible ?? DEFAULT_VISIBLE);
@@ -218,6 +220,7 @@ function GameGrid({
   const [draftVisible, setDraftVisible] = useState(DEFAULT_VISIBLE);
   const [draftTheme,   setDraftTheme]   = useState(DEFAULT_THEME);
   const [draftCustom,  setDraftCustom]  = useState(DEFAULT_CUSTOM);
+  const [draftEnabledStats, setDraftEnabledStats] = useState({ assists: false, steals: false, blocks: false });
 
   // Persist layout + visibility + theme + custom colors to localStorage whenever they change
   useEffect(() => {
@@ -266,6 +269,7 @@ function GameGrid({
     setDraftVisible({ ...visible });
     setDraftTheme(theme);
     setDraftCustom({ ...custom });
+    setDraftEnabledStats({ ...enabledStats });
     setSettingsOpen(true);
   };
   const applySettings = () => {
@@ -273,6 +277,7 @@ function GameGrid({
     setVisible({ ...draftVisible });
     setTheme(draftTheme);
     setCustom({ ...draftCustom });
+    onEnabledStatsChange?.({ ...draftEnabledStats });
     setSettingsOpen(false);
   };
   const resetToDefaults = () => {
@@ -280,6 +285,7 @@ function GameGrid({
     setDraftVisible({ ...DEFAULT_VISIBLE });
     setDraftTheme(DEFAULT_THEME);
     setDraftCustom({ ...DEFAULT_CUSTOM });
+    setDraftEnabledStats({ assists: false, steals: false, blocks: false });
   };
 
   // Settings panel drag-and-drop (edits draft, not live state)
@@ -421,6 +427,28 @@ function GameGrid({
                 })}
               </div>
               <p className="settings-hint">💡 Drag-and-drop also works directly on the game screen.</p>
+            </div>
+
+            {/* Stat Tracking */}
+            <div className="settings-section">
+              <h3 className="settings-section-title">Stat Tracking</h3>
+              <p className="settings-hint" style={{ marginTop: 0 }}>Enable extra stats for the Quick Entry widget.</p>
+              <div className="settings-visibility-grid">
+                {[
+                  { key: 'assists', label: '🤝 Assists [A]' },
+                  { key: 'steals',  label: '🫳 Steals [S]'  },
+                  { key: 'blocks',  label: '✋ Blocks [B]'  },
+                ].map(({ key, label }) => (
+                  <label key={key} className="settings-toggle">
+                    <input
+                      type="checkbox"
+                      checked={!!draftEnabledStats[key]}
+                      onChange={() => setDraftEnabledStats(prev => ({ ...prev, [key]: !prev[key] }))}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* Color Theme */}

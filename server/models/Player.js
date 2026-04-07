@@ -8,7 +8,10 @@ const playerSchema = new mongoose.Schema({
   rebounds: { type: Number, default: 0 },
   offensiveRebounds: { type: Number, default: 0 },
   defensiveRebounds: { type: Number, default: 0 },
-  fouls: { type: Number, default: 0 }
+  fouls: { type: Number, default: 0 },
+  assists: { type: Number, default: 0 },
+  steals: { type: Number, default: 0 },
+  blocks: { type: Number, default: 0 }
 });
 
 export default mongoose.model('Player', playerSchema);

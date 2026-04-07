@@ -27,6 +27,12 @@ function App() {
   const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g) or [F]oul:');
   const [actionHistory, setActionHistory] = useState([]); // stack of undoable actions
   const [foulWarning, setFoulWarning] = useState(null); // { playerName, foulCount }
+  const [enabledStats, setEnabledStats] = useState(() => {
+    try {
+      const s = localStorage.getItem('ctb_enabled_stats');
+      return s ? JSON.parse(s) : { assists: false, steals: false, blocks: false };
+    } catch { return { assists: false, steals: false, blocks: false }; }
+  });
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const inputRef = useRef(null);
@@ -34,6 +40,21 @@ function App() {
 
   const pushHistory = (entry) =>
     setActionHistory(prev => [...prev.slice(-19), entry]); // keep last 20
+
+  useEffect(() => {
+    localStorage.setItem('ctb_enabled_stats', JSON.stringify(enabledStats));
+  }, [enabledStats]);
+
+  // Build the action-step prompt based on which extra stats are on
+  const buildActionPrompt = (player, teamLabel) => {
+    const extras = [
+      enabledStats.assists && '[A]ssist',
+      enabledStats.steals  && '[S]teal',
+      enabledStats.blocks  && '[B]lock',
+    ].filter(Boolean);
+    const base = `${player.name} (#${player.number} ${teamLabel}) — [P]oints, [R]ebounds, [F]oul`;
+    return extras.length ? `${base}, ${extras.join(', ')}?` : `${base}?`;
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -83,7 +104,7 @@ function App() {
     const teamLabel = player.team === 'Home' ? homeTeamName : awayTeamName;
     setSelectedPlayer(player);
     setStep('action');
-    setPrompt(`${player.name} (#${player.number} ${teamLabel}) — [P]oints, [R]ebounds, or [F]oul?`);
+    setPrompt(buildActionPrompt(player, teamLabel));
     if (inputRef.current) {
       inputRef.current.value = '';
       inputRef.current.focus();
@@ -116,7 +137,7 @@ function App() {
           if (player) {
             setSelectedPlayer(player);
             setPlayerNumber(input);
-            setPrompt(`${player.name} (#${player.number} ${team === 'Home' ? homeTeamName : awayTeamName}) — [P]oints, [R]ebounds, or [F]oul?`);
+            setPrompt(buildActionPrompt(player, team === 'Home' ? homeTeamName : awayTeamName));
             setStep('action');
             e.target.value = '';
           } else {
@@ -139,8 +160,31 @@ function App() {
           e.target.value = '';
           resetFlow();
           submitting.current = false;
+        } else if (input === 'a' && enabledStats.assists) {
+          submitting.current = true;
+          await addQuickStat(selectedPlayer._id, 'assist', selectedPlayer.name, 'ast');
+          e.target.value = '';
+          resetFlow();
+          submitting.current = false;
+        } else if (input === 's' && enabledStats.steals) {
+          submitting.current = true;
+          await addQuickStat(selectedPlayer._id, 'steal', selectedPlayer.name, 'stl');
+          e.target.value = '';
+          resetFlow();
+          submitting.current = false;
+        } else if (input === 'b' && enabledStats.blocks) {
+          submitting.current = true;
+          await addQuickStat(selectedPlayer._id, 'block', selectedPlayer.name, 'blk');
+          e.target.value = '';
+          resetFlow();
+          submitting.current = false;
         } else {
-          alert('Press P for Points, R for Rebounds, or F for Foul');
+          const extras = [
+            enabledStats.assists && 'A=Assist',
+            enabledStats.steals  && 'S=Steal',
+            enabledStats.blocks  && 'B=Block',
+          ].filter(Boolean);
+          alert(`Press P=Points, R=Rebounds, F=Foul${extras.length ? ', ' + extras.join(', ') : ''}`);
           e.target.value = '';
         }
       } else if (step === 'points') {
@@ -260,6 +304,16 @@ function App() {
     }
   };
 
+  const addQuickStat = async (playerId, statType, playerName, shortLabel) => {
+    try {
+      await fetch(`${API_URL}/api/players/${playerId}/${statType}`, { method: 'PATCH' });
+      await fetchPlayers();
+      pushHistory({ type: statType, playerId, label: `${playerName} +1 ${shortLabel}` });
+    } catch (error) {
+      console.error(`Error adding ${statType}:`, error);
+    }
+  };
+
   const undoLast = async () => {
     if (actionHistory.length === 0) return;
     const last = actionHistory[actionHistory.length - 1];
@@ -278,6 +332,11 @@ function App() {
         });
       } else if (last.type === 'foul') {
         await fetch(`${API_URL}/api/players/${last.playerId}/undo-foul`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else if (['assist', 'steal', 'block'].includes(last.type)) {
+        await fetch(`${API_URL}/api/players/${last.playerId}/undo-${last.type}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -332,7 +391,10 @@ function App() {
               rebounds: p.rebounds,
               offensiveRebounds: p.offensiveRebounds || 0,
               defensiveRebounds: p.defensiveRebounds || 0,
-              fouls: p.fouls || 0
+              fouls: p.fouls || 0,
+              assists: p.assists || 0,
+              steals: p.steals || 0,
+              blocks: p.blocks || 0,
             }))
           })
         });
@@ -583,6 +645,8 @@ function App() {
         onPlayerSelect={handlePlayerSelect}
         actionHistory={actionHistory}
         onUndo={undoLast}
+        enabledStats={enabledStats}
+        onEnabledStatsChange={setEnabledStats}
       />
     </div>
   );
