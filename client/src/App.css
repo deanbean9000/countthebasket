@@ -193,6 +193,211 @@ body {
   transform: scale(1.05);
 }
 
+.btn-end-game--secondary {
+  background: rgba(244, 67, 54, 0.3);
+  border: 1px solid rgba(244, 67, 54, 0.5);
+  font-size: 0.78rem;
+  padding: 6px 14px;
+}
+
+.btn-end-game--secondary:hover {
+  background: rgba(244, 67, 54, 0.55);
+}
+
+/* Period badge in scoreboard */
+.scoreboard-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.period-badge {
+  display: inline-block;
+  background: rgba(255, 215, 0, 0.18);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  border-radius: 20px;
+  padding: 4px 18px;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.period-fouls-badge {
+  font-size: 0.78rem;
+  color: rgba(255, 200, 200, 0.75);
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+
+.btn-end-period {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #1565c0, #1976d2);
+  color: white;
+  border: 2px solid #42a5f5;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-end-period:hover {
+  background: linear-gradient(135deg, #1976d2, #2196f3);
+  transform: scale(1.04);
+  box-shadow: 0 0 14px rgba(33, 150, 243, 0.4);
+}
+
+.btn-end-period--last {
+  background: linear-gradient(135deg, #e65100, #f57c00);
+  border-color: #ffb74d;
+}
+
+.btn-end-period--last:hover {
+  background: linear-gradient(135deg, #f57c00, #ff9800);
+  box-shadow: 0 0 14px rgba(255, 152, 0, 0.4);
+}
+
+/* Period break overlay */
+.period-break-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.period-break-panel {
+  background: linear-gradient(160deg, #1e3c72 0%, #2a5298 100%);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 20px;
+  padding: 40px 48px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  min-width: 340px;
+}
+
+.period-break-badge {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 24px;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.period-break-scores {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.period-break-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.period-break-team-name {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: bold;
+}
+
+.period-break-score {
+  font-size: 3rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.period-break-dash {
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.period-break-running {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 28px;
+}
+
+.btn-start-period {
+  padding: 14px 36px;
+  background: linear-gradient(135deg, #1b5e20, #43a047);
+  color: white;
+  border: 2px solid #66bb6a;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-start-period:hover {
+  background: linear-gradient(135deg, #2e7d32, #4caf50);
+  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(76, 175, 80, 0.45);
+}
+
+/* Summary period breakdown table */
+.summary-periods {
+  margin: 0 auto 28px;
+  max-width: 480px;
+}
+
+.summary-section-title {
+  font-size: 1.2rem;
+  color: #ffd700;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.summary-periods-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.summary-periods-table th,
+.summary-periods-table td {
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-periods-table th {
+  background: rgba(255, 215, 0, 0.1);
+  color: #ffd700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.summary-periods-table td {
+  color: white;
+  font-size: 1rem;
+}
+
+.summary-periods-table td:first-child {
+  font-weight: bold;
+  color: rgba(255, 215, 0, 0.85);
+}
+
+.summary-periods-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 /* Quick Entry Section */
 .quick-entry {
   background: rgba(255, 255, 255, 0.1);
@@ -648,9 +853,15 @@ body {
 .foul-warning-toast--out {
   background: linear-gradient(135deg, #7f0000, #b71c1c);
   color: #fff;
-  border: 1px solid rgba(255, 100, 100, 0.4);
-  box-shadow: 0 8px 32px rgba(183, 28, 28, 0.6);
-  animation: toast-slide-in 0.3s ease, toast-shake 0.4s ease 0.3s;
+  border: 2px solid rgba(255, 100, 100, 0.6);
+  box-shadow: 0 8px 40px rgba(183, 28, 28, 0.8), 0 0 0 4px rgba(183, 28, 28, 0.3);
+  animation: toast-slide-in 0.3s ease, toast-shake 0.4s ease 0.3s, toast-pulse 1.5s ease 0.7s infinite;
+  min-width: 360px;
+}
+
+@keyframes toast-pulse {
+  0%, 100% { box-shadow: 0 8px 40px rgba(183, 28, 28, 0.8), 0 0 0 4px rgba(183, 28, 28, 0.3); }
+  50%       { box-shadow: 0 8px 40px rgba(183, 28, 28, 0.8), 0 0 0 8px rgba(183, 28, 28, 0.12); }
 }
 
 @keyframes toast-shake {

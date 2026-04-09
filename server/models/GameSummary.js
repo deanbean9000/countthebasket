@@ -14,6 +14,14 @@ const playerStatSchema = new mongoose.Schema({
   blocks: { type: Number, default: 0 }
 }, { _id: false });
 
+const periodSchema = new mongoose.Schema({
+  period: Number,
+  label: String,
+  homeScore: { type: Number, default: 0 },
+  awayScore: { type: Number, default: 0 },
+  players: [playerStatSchema]
+}, { _id: false });
+
 const gameSummarySchema = new mongoose.Schema({
   leagueId: { type: mongoose.Schema.Types.ObjectId, ref: 'League', required: true, index: true },
   homeTeamName: { type: String, default: 'Home' },
@@ -22,6 +30,8 @@ const gameSummarySchema = new mongoose.Schema({
   awayScore: { type: Number, default: 0 },
   winner: { type: String, default: null },
   players: [playerStatSchema],
+  periodType: { type: String, default: 'none' },
+  periods: [periodSchema],
   playedAt: { type: Date, default: Date.now }
 });
 

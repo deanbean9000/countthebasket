@@ -34,6 +34,10 @@ function GameGrid({
   onVisibleChange,
   onThemeChange,
   onCustomChange,
+  currentPeriod,
+  totalPeriods,
+  periodType,
+  onEndPeriod,
 
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -121,7 +125,15 @@ function GameGrid({
   const renderWidget = (key) => {
     switch (key) {
       case 'scoreboard':
-        return <ScoreboardWidget homeTeamName={homeTeamName} awayTeamName={awayTeamName} homeStats={homeStats} awayStats={awayStats} onEndGame={onEndGame} />;
+        return <ScoreboardWidget
+          homeTeamName={homeTeamName} awayTeamName={awayTeamName}
+          homeStats={homeStats} awayStats={awayStats}
+          onEndGame={onEndGame}
+          currentPeriod={currentPeriod}
+          totalPeriods={totalPeriods}
+          periodType={periodType}
+          onEndPeriod={onEndPeriod}
+        />;
       case 'homeRoster':
         return <RosterWidget teamName={homeTeamName} players={players} team="Home" onPlayerSelect={onPlayerSelect} />;
       case 'quickEntry':

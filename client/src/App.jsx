@@ -38,6 +38,15 @@ function App() {
     } catch { return { assists: false, steals: false, blocks: false }; }
   });
 
+  // ── Period tracking ───────────────────────────────────────────────────────
+  const [periodType, setPeriodType] = useState('none'); // 'quarters' | 'halves' | 'none'
+  const [currentPeriod, setCurrentPeriod] = useState(1);
+  const [totalPeriods, setTotalPeriods] = useState(0);
+  const [periodSnapshots, setPeriodSnapshots] = useState([]);
+  const [periodStartStats, setPeriodStartStats] = useState(null);
+  const [periodBreakData, setPeriodBreakData] = useState(null); // { snapshot, nextPeriod }
+  const [summaryPeriods, setSummaryPeriods] = useState([]);
+
   // ── Lifted game settings (shared with GameGrid + Hero) ────────────────────
   const [layout,  setLayout]  = useState(() => loadSaved()?.layout  ?? DEFAULT_LAYOUT);
   const [visible, setVisible] = useState(() => loadSaved()?.visible ?? DEFAULT_VISIBLE);
@@ -320,7 +329,10 @@ function App() {
       pushHistory({ type: 'foul', playerId, label: `${playerName} +1 foul` });
       if (newFouls >= 3) {
         setFoulWarning({ playerName, foulCount: newFouls });
-        setTimeout(() => setFoulWarning(null), 5000);
+        // Foul-outs require manual dismiss — player must be removed from the game
+        if (newFouls < 5) {
+          setTimeout(() => setFoulWarning(null), 5000);
+        }
       }
     } catch (error) {
       console.error('Error adding foul:', error);
@@ -373,21 +385,28 @@ function App() {
 
   const getTeamStats = (team) => {
     const teamPlayers = players.filter(p => p.team === team);
+    const startPlayers = (periodStartStats || []).filter(p => p.team === team);
     return {
       points: teamPlayers.reduce((sum, p) => sum + p.points, 0),
       rebounds: teamPlayers.reduce((sum, p) => sum + p.rebounds, 0),
       offensive: teamPlayers.reduce((sum, p) => sum + (p.offensiveRebounds || 0), 0),
       defensive: teamPlayers.reduce((sum, p) => sum + (p.defensiveRebounds || 0), 0),
-      fouls: teamPlayers.reduce((sum, p) => sum + (p.fouls || 0), 0)
+      fouls: teamPlayers.reduce((sum, p) => sum + (p.fouls || 0), 0),
+      periodFouls: teamPlayers.reduce((sum, p) => {
+        const start = startPlayers.find(s => s._id === p._id);
+        return sum + (p.fouls || 0) - (start?.fouls || 0);
+      }, 0),
     };
   };
 
   const homeStats = getTeamStats('Home');
   const awayStats = getTeamStats('Away');
 
-  const endGame = async () => {
+  const endGame = async (snapshotsOverride) => {
     const snap = [...players];
+    const finalPeriods = snapshotsOverride !== undefined ? snapshotsOverride : periodSnapshots;
     setSummaryPlayers(snap);
+    setSummaryPeriods(finalPeriods);
     // Save game summary to DB
     if (league) {
       const homeP = snap.filter(p => p.team === 'Home');
@@ -406,6 +425,14 @@ function App() {
             homeScore,
             awayScore,
             winner,
+            periodType,
+            periods: finalPeriods.map(s => ({
+              period: s.period,
+              label: s.label,
+              homeScore: s.homeScore,
+              awayScore: s.awayScore,
+              players: s.players,
+            })),
             players: snap.map(p => ({
               name: p.name,
               number: p.number,
@@ -427,12 +454,69 @@ function App() {
     }
     setView('summary');
     setPlayers([]);
+    setPeriodSnapshots([]);
+    setPeriodStartStats(null);
+    setPeriodBreakData(null);
+    setCurrentPeriod(1);
     resetFlow();
+  };
+
+  const getPeriodLabel = (n, type) => {
+    if (type === 'halves') return n === 1 ? '1st Half' : '2nd Half';
+    if (type === 'quarters') return `Q${n}`;
+    return '';
+  };
+
+  const endPeriod = async () => {
+    const startStats = periodStartStats || [];
+    const periodPlayers = players.map(p => {
+      const start = startStats.find(s => s._id === p._id) || {};
+      return {
+        name: p.name,
+        number: p.number,
+        team: p.team,
+        points: p.points - (start.points || 0),
+        rebounds: p.rebounds - (start.rebounds || 0),
+        offensiveRebounds: (p.offensiveRebounds || 0) - (start.offensiveRebounds || 0),
+        defensiveRebounds: (p.defensiveRebounds || 0) - (start.defensiveRebounds || 0),
+        fouls: (p.fouls || 0) - (start.fouls || 0),
+        assists: (p.assists || 0) - (start.assists || 0),
+        steals: (p.steals || 0) - (start.steals || 0),
+        blocks: (p.blocks || 0) - (start.blocks || 0),
+      };
+    });
+    const homeScore = periodPlayers.filter(p => p.team === 'Home').reduce((s, p) => s + p.points, 0);
+    const awayScore = periodPlayers.filter(p => p.team === 'Away').reduce((s, p) => s + p.points, 0);
+    const snapshot = {
+      period: currentPeriod,
+      label: getPeriodLabel(currentPeriod, periodType),
+      homeScore,
+      awayScore,
+      players: periodPlayers,
+    };
+    const newSnapshots = [...periodSnapshots, snapshot];
+    setPeriodSnapshots(newSnapshots);
+    setPeriodStartStats([...players]);
+
+    if (currentPeriod >= totalPeriods) {
+      await endGame(newSnapshots);
+    } else {
+      setPeriodBreakData({ snapshot, nextPeriod: currentPeriod + 1 });
+      setCurrentPeriod(prev => prev + 1);
+    }
   };
 
   const handleStartGame = (config = {}) => {
     setHomeTeamName(config.homeTeamName || 'Home');
     setAwayTeamName(config.awayTeamName || 'Away');
+    const pt = config.periodType || 'none';
+    const total = pt === 'halves' ? 2 : pt === 'quarters' ? 4 : 0;
+    setPeriodType(pt);
+    setTotalPeriods(total);
+    setCurrentPeriod(1);
+    setPeriodSnapshots([]);
+    setPeriodStartStats(null);
+    setPeriodBreakData(null);
     setView('game');
   };
 
@@ -483,6 +567,29 @@ function App() {
               <div className="summary-score">{awayTotals.points}</div>
             </div>
           </div>
+          {summaryPeriods.length > 0 && (
+            <div className="summary-periods">
+              <h2 className="summary-section-title">Period Breakdown</h2>
+              <table className="summary-periods-table">
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>{homeTeamName}</th>
+                    <th>{awayTeamName}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summaryPeriods.map((s, i) => (
+                    <tr key={i}>
+                      <td>{s.label}</td>
+                      <td>{s.homeScore}</td>
+                      <td>{s.awayScore}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           <div className="summary-teams">
             {[{ label: homeTeamName, pList: homeP, totals: homeTotals }, { label: awayTeamName, pList: awayP, totals: awayTotals }].map(({ label, pList, totals }) => (
               <div key={label} className="summary-team-block">
@@ -666,13 +773,45 @@ function App() {
             <strong>{foulWarning.playerName}</strong> — {foulWarning.foulCount} Fouls
             <div className="foul-warning-msg">
               {foulWarning.foulCount >= 5
-                ? 'FOUL OUT — Player must be removed!'
+                ? '🚫 FOUL OUT — Remove this player from the game!'
                 : foulWarning.foulCount === 4
                 ? 'Danger zone — one more and they\'re out!'
                 : 'In foul trouble — 3 fouls!'}
             </div>
+            {foulWarning.foulCount >= 5 && (
+              <div className="foul-warning-msg" style={{ marginTop: 4, fontStyle: 'italic', opacity: 0.7 }}>
+                Tap to dismiss
+              </div>
+            )}
           </div>
           <button className="foul-warning-dismiss" aria-label="Dismiss">✕</button>
+        </div>
+      )}
+      {periodBreakData && (
+        <div className="period-break-overlay">
+          <div className="period-break-panel">
+            <div className="period-break-badge">{periodBreakData.snapshot.label} Complete</div>
+            <div className="period-break-scores">
+              <div className="period-break-team">
+                <div className="period-break-team-name">{homeTeamName}</div>
+                <div className="period-break-score">{periodBreakData.snapshot.homeScore}</div>
+              </div>
+              <div className="period-break-dash">–</div>
+              <div className="period-break-team">
+                <div className="period-break-team-name">{awayTeamName}</div>
+                <div className="period-break-score">{periodBreakData.snapshot.awayScore}</div>
+              </div>
+            </div>
+            <div className="period-break-running">
+              Running total — {homeTeamName}: {homeStats.points} · {awayTeamName}: {awayStats.points}
+            </div>
+            <button
+              className="btn-start-period"
+              onClick={() => setPeriodBreakData(null)}
+            >
+              Start {getPeriodLabel(periodBreakData.nextPeriod, periodType)} →
+            </button>
+          </div>
         </div>
       )}
       <GameGrid
@@ -690,6 +829,10 @@ function App() {
         onUndo={undoLast}
         enabledStats={enabledStats}
         onEnabledStatsChange={setEnabledStats}
+        currentPeriod={currentPeriod}
+        totalPeriods={totalPeriods}
+        periodType={periodType}
+        onEndPeriod={endPeriod}
         layout={layout}
         visible={visible}
         theme={theme}

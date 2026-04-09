@@ -8,6 +8,7 @@ function NewGame({ leagueId, onStartGame, onBack }) {
   const [guestRoster, setGuestRoster] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [periodType, setPeriodType] = useState('quarters'); // 'quarters' | 'halves' | 'none'
 
   const API_URL = import.meta.env.VITE_API_URL || window.location.origin.replace('-5173', '-3001');
 
@@ -75,6 +76,7 @@ function NewGame({ leagueId, onStartGame, onBack }) {
         onStartGame({
           homeTeamName: homeRoster.homeTeamName || homeRoster.name,
           awayTeamName: guestRoster.homeTeamName || guestRoster.name,
+          periodType,
         });
       } else {
         alert('Failed to load roster data. Please try again.');
@@ -129,6 +131,25 @@ function NewGame({ leagueId, onStartGame, onBack }) {
 
         {homeRoster && guestRoster && (
           <div className="start-row">
+            <div className="period-type-selector">
+              <span className="period-type-label">Game Format:</span>
+              <div className="period-type-options">
+                {[
+                  { value: 'quarters', label: '4 Quarters' },
+                  { value: 'halves',   label: '2 Halves'   },
+                  { value: 'none',     label: 'No Periods' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    className={`period-type-btn ${periodType === opt.value ? 'active' : ''}`}
+                    onClick={() => setPeriodType(opt.value)}
+                    type="button"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               className="btn-start-game"
               onClick={startGame}
