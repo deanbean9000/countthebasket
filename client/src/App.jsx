@@ -25,7 +25,6 @@ function App() {
   const [homeTeamName, setHomeTeamName] = useState('Home');
   const [awayTeamName, setAwayTeamName] = useState('Away');
   const [step, setStep] = useState('number');
-  const [playerNumber, setPlayerNumber] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [foulTeam, setFoulTeam] = useState(null);
   const [prompt, setPrompt] = useState('Enter number + team (e.g. 5h or 12g) or [F]oul:');
@@ -98,7 +97,7 @@ function App() {
 
   // --- CODESPACES CONNECTION FIX ---
   // This detects your current URL and forces it to point to the backend port 3001
- const API_URL = import.meta.env.VITE_API_URL || window.location.origin.replace('-5173', '-3001');
+  const API_URL = import.meta.env.VITE_API_URL || window.location.origin.replace('-5173', '-3001');
 
   useEffect(() => {
     if (view === 'game') {
@@ -125,7 +124,6 @@ function App() {
 
   const resetFlow = () => {
     setStep('number');
-    setPlayerNumber('');
     setSelectedPlayer(null);
     setFoulTeam(null);
     setPrompt('Enter number + team (e.g. 5h or 12g) or [F]oul:');
@@ -168,7 +166,6 @@ function App() {
           const player = players.find(p => p.number === num && p.team === team);
           if (player) {
             setSelectedPlayer(player);
-            setPlayerNumber(input);
             setPrompt(buildActionPrompt(player, team === 'Home' ? homeTeamName : awayTeamName));
             setStep('action');
             e.target.value = '';

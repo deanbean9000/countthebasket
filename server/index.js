@@ -320,10 +320,10 @@ app.post('/api/players/load-roster', async (req, res) => {
 
 // 5. GAME SUMMARY ROUTES
 app.post('/api/game-summaries', async (req, res) => {
-  const { leagueId, homeTeamName, awayTeamName, homeScore, awayScore, winner, players } = req.body;
+  const { leagueId, homeTeamName, awayTeamName, homeScore, awayScore, winner, players, periodType, periods } = req.body;
   if (!leagueId) return res.status(400).json({ message: 'leagueId is required.' });
   try {
-    const summary = new GameSummary({ leagueId, homeTeamName, awayTeamName, homeScore, awayScore, winner, players });
+    const summary = new GameSummary({ leagueId, homeTeamName, awayTeamName, homeScore, awayScore, winner, players, periodType, periods });
     const saved = await summary.save();
     res.status(201).json(saved);
   } catch (err) {
