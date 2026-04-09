@@ -1,196 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import './GameGrid.css';
 import ScoreboardWidget from './ScoreboardWidget';
 import QuickEntryWidget from './QuickEntryWidget';
 import RosterWidget from './RosterWidget';
 import PlayerCardsWidget from './PlayerCardsWidget';
-
-// ─── Widget metadata ──────────────────────────────────────────────────────────
-const WIDGET_META = {
-  scoreboard:  { label: '📊 Scoreboard' },
-  homeRoster:  { label: '🏠 Home Roster' },
-  quickEntry:  { label: '⌨️ Quick Entry' },
-  awayRoster:  { label: '✈️ Away Roster' },
-  playerCards: { label: '🃏 Player Stats' },
-};
-
-// ─── Fixed grid slots ─────────────────────────────────────────────────────────
-// There are always 7 slots: 1 full-width top row + 3-column × 2 rows below.
-// Widgets are assigned to slots; dragging a widget swaps its slot with another.
-const SLOTS = [
-  { id: 'top',        cls: 'slot-top'        },
-  { id: 'left-mid',   cls: 'slot-left-mid'   },
-  { id: 'center-mid', cls: 'slot-center-mid' },
-  { id: 'right-mid',  cls: 'slot-right-mid'  },
-  { id: 'left-bot',   cls: 'slot-left-bot'   },
-  { id: 'center-bot', cls: 'slot-center-bot' },
-  { id: 'right-bot',  cls: 'slot-right-bot'  },
-];
-
-// ─── Defaults ─────────────────────────────────────────────────────────────────
-const DEFAULT_LAYOUT = {
-  'top':        'scoreboard',
-  'left-mid':   'homeRoster',
-  'center-mid': 'quickEntry',
-  'right-mid':  'awayRoster',
-  'left-bot':   null,
-  'center-bot': 'playerCards',
-  'right-bot':  null,
-};
-
-const DEFAULT_VISIBLE = Object.fromEntries(
-  Object.keys(WIDGET_META).map(k => [k, true])
-);
-
-// ─── Color utilities ──────────────────────────────────────────────────────────
-function hexToRgba(hex, alpha = 1) {
-  const n = hex.replace('#', '');
-  const r = parseInt(n.slice(0, 2), 16);
-  const g = parseInt(n.slice(2, 4), 16);
-  const b = parseInt(n.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function buildCustomVars({ bg, accent, text }) {
-  return {
-    '--bg-gradient':          bg,
-    '--text-color':           text,
-    '--accent-color':         accent,
-    '--accent-dim':           hexToRgba(accent, 0.65),
-    '--accent-border':        hexToRgba(accent, 0.4),
-    '--accent-hover-bg':      hexToRgba(accent, 0.1),
-    '--accent-glow':          hexToRgba(accent, 0.25),
-    '--widget-bg':            'rgba(0, 0, 0, 0.28)',
-    '--widget-header-bg':     hexToRgba(accent, 0.07),
-    '--widget-header-border': hexToRgba(accent, 0.18),
-    '--settings-panel-bg':    'rgba(10, 10, 15, 0.97)',
-  };
-}
-
-// ─── Colour themes ─────────────────────────────────────────────────────────────
-const THEMES = {
-  blue: {
-    label: 'Classic Blue',
-    swatchBg: 'linear-gradient(135deg, #1e3c72, #2a5298)',
-    swatchAccent: '#ffd700',
-    vars: {
-      '--bg-gradient':          'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-      '--text-color':           '#ffffff',
-      '--accent-color':         '#ffd700',
-      '--accent-dim':           'rgba(255, 215, 0, 0.65)',
-      '--accent-border':        'rgba(255, 215, 0, 0.4)',
-      '--accent-hover-bg':      'rgba(255, 215, 0, 0.1)',
-      '--accent-glow':          'rgba(255, 215, 0, 0.25)',
-      '--widget-bg':            'rgba(0, 0, 0, 0.28)',
-      '--widget-header-bg':     'rgba(255, 215, 0, 0.07)',
-      '--widget-header-border': 'rgba(255, 215, 0, 0.18)',
-      '--settings-panel-bg':    'linear-gradient(145deg, #1a2d5a, #0f1e3e)',
-    },
-  },
-  dark: {
-    label: 'Dark Court',
-    swatchBg: 'linear-gradient(135deg, #0a0a0a, #1c1c1c)',
-    swatchAccent: '#ff6b35',
-    vars: {
-      '--bg-gradient':          'linear-gradient(135deg, #0a0a0a 0%, #1c1c1c 100%)',
-      '--text-color':           '#ffffff',
-      '--accent-color':         '#ff6b35',
-      '--accent-dim':           'rgba(255, 107, 53, 0.65)',
-      '--accent-border':        'rgba(255, 107, 53, 0.4)',
-      '--accent-hover-bg':      'rgba(255, 107, 53, 0.1)',
-      '--accent-glow':          'rgba(255, 107, 53, 0.25)',
-      '--widget-bg':            'rgba(255, 255, 255, 0.04)',
-      '--widget-header-bg':     'rgba(255, 107, 53, 0.07)',
-      '--widget-header-border': 'rgba(255, 107, 53, 0.18)',
-      '--settings-panel-bg':    'linear-gradient(145deg, #1a1a1a, #0d0d0d)',
-    },
-  },
-  green: {
-    label: 'Forest Green',
-    swatchBg: 'linear-gradient(135deg, #0d3320, #145a32)',
-    swatchAccent: '#69f0ae',
-    vars: {
-      '--bg-gradient':          'linear-gradient(135deg, #0d3320 0%, #145a32 100%)',
-      '--text-color':           '#ffffff',
-      '--accent-color':         '#69f0ae',
-      '--accent-dim':           'rgba(105, 240, 174, 0.65)',
-      '--accent-border':        'rgba(105, 240, 174, 0.4)',
-      '--accent-hover-bg':      'rgba(105, 240, 174, 0.1)',
-      '--accent-glow':          'rgba(105, 240, 174, 0.25)',
-      '--widget-bg':            'rgba(0, 0, 0, 0.3)',
-      '--widget-header-bg':     'rgba(105, 240, 174, 0.07)',
-      '--widget-header-border': 'rgba(105, 240, 174, 0.18)',
-      '--settings-panel-bg':    'linear-gradient(145deg, #0d3320, #07200f)',
-    },
-  },
-  purple: {
-    label: 'Purple Rain',
-    swatchBg: 'linear-gradient(135deg, #2d0b5e, #4a1080)',
-    swatchAccent: '#e040fb',
-    vars: {
-      '--bg-gradient':          'linear-gradient(135deg, #2d0b5e 0%, #4a1080 100%)',
-      '--text-color':           '#ffffff',
-      '--accent-color':         '#e040fb',
-      '--accent-dim':           'rgba(224, 64, 251, 0.65)',
-      '--accent-border':        'rgba(224, 64, 251, 0.4)',
-      '--accent-hover-bg':      'rgba(224, 64, 251, 0.1)',
-      '--accent-glow':          'rgba(224, 64, 251, 0.25)',
-      '--widget-bg':            'rgba(0, 0, 0, 0.3)',
-      '--widget-header-bg':     'rgba(224, 64, 251, 0.07)',
-      '--widget-header-border': 'rgba(224, 64, 251, 0.18)',
-      '--settings-panel-bg':    'linear-gradient(145deg, #2d0b5e, #1e0840)',
-    },
-  },
-  crimson: {
-    label: 'Crimson',
-    swatchBg: 'linear-gradient(135deg, #5c0a0a, #8b1a1a)',
-    swatchAccent: '#ffcc02',
-    vars: {
-      '--bg-gradient':          'linear-gradient(135deg, #5c0a0a 0%, #8b1a1a 100%)',
-      '--text-color':           '#ffffff',
-      '--accent-color':         '#ffcc02',
-      '--accent-dim':           'rgba(255, 204, 2, 0.65)',
-      '--accent-border':        'rgba(255, 204, 2, 0.4)',
-      '--accent-hover-bg':      'rgba(255, 204, 2, 0.1)',
-      '--accent-glow':          'rgba(255, 204, 2, 0.25)',
-      '--widget-bg':            'rgba(0, 0, 0, 0.3)',
-      '--widget-header-bg':     'rgba(255, 204, 2, 0.07)',
-      '--widget-header-border': 'rgba(255, 204, 2, 0.18)',
-      '--settings-panel-bg':    'linear-gradient(145deg, #5c0a0a, #3d0606)',
-    },
-  },
-  midnight: {
-    label: 'Midnight',
-    swatchBg: 'linear-gradient(135deg, #050a1a, #0d1b3e)',
-    swatchAccent: '#40c4ff',
-    vars: {
-      '--bg-gradient':          'linear-gradient(135deg, #050a1a 0%, #0d1b3e 100%)',
-      '--text-color':           '#ffffff',
-      '--accent-color':         '#40c4ff',
-      '--accent-dim':           'rgba(64, 196, 255, 0.65)',
-      '--accent-border':        'rgba(64, 196, 255, 0.4)',
-      '--accent-hover-bg':      'rgba(64, 196, 255, 0.1)',
-      '--accent-glow':          'rgba(64, 196, 255, 0.25)',
-      '--widget-bg':            'rgba(255, 255, 255, 0.04)',
-      '--widget-header-bg':     'rgba(64, 196, 255, 0.07)',
-      '--widget-header-border': 'rgba(64, 196, 255, 0.18)',
-      '--settings-panel-bg':    'linear-gradient(145deg, #050a1a, #02071a)',
-    },
-  },
-};
-
-const DEFAULT_THEME  = 'blue';
-const DEFAULT_CUSTOM = { bg: '#1a2d5a', accent: '#ffd700', text: '#ffffff' };
-
-// ─── localStorage persistence ─────────────────────────────────────────────────
-const STORAGE_KEY = 'ctb_widget_layout_v1';
-
-function loadSaved() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
+import {
+  THEMES, WIDGET_META, SLOTS,
+  DEFAULT_LAYOUT, DEFAULT_VISIBLE, DEFAULT_THEME, DEFAULT_CUSTOM,
+  buildCustomVars,
+} from './gameSettings';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 function GameGrid({
@@ -208,11 +26,16 @@ function GameGrid({
   onUndo,
   enabledStats = { assists: false, steals: false, blocks: false },
   onEnabledStatsChange,
+  layout,
+  visible,
+  theme,
+  custom,
+  onLayoutChange,
+  onVisibleChange,
+  onThemeChange,
+  onCustomChange,
+
 }) {
-  const [layout,  setLayout]  = useState(() => loadSaved()?.layout  ?? DEFAULT_LAYOUT);
-  const [visible, setVisible] = useState(() => loadSaved()?.visible ?? DEFAULT_VISIBLE);
-  const [theme,   setTheme]   = useState(() => loadSaved()?.theme   ?? DEFAULT_THEME);
-  const [custom,  setCustom]  = useState(() => loadSaved()?.custom  ?? DEFAULT_CUSTOM);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Draft copies — only committed to real state on Apply
@@ -221,20 +44,6 @@ function GameGrid({
   const [draftTheme,   setDraftTheme]   = useState(DEFAULT_THEME);
   const [draftCustom,  setDraftCustom]  = useState(DEFAULT_CUSTOM);
   const [draftEnabledStats, setDraftEnabledStats] = useState({ assists: false, steals: false, blocks: false });
-
-  // Persist layout + visibility + theme + custom colors to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout, visible, theme, custom }));
-  }, [layout, visible, theme, custom]);
-
-  // Apply theme CSS variables to :root whenever the active theme or custom values change
-  useEffect(() => {
-    const vars = theme === 'custom'
-      ? buildCustomVars(custom)
-      : (THEMES[theme]?.vars ?? THEMES[DEFAULT_THEME].vars);
-    const root = document.documentElement;
-    Object.entries(vars).forEach(([prop, val]) => root.style.setProperty(prop, val));
-  }, [theme, custom]);
 
   // ── Live grid drag-and-drop ────────────────────────────────────────────
   const liveFromSlot = useRef(null);
@@ -255,7 +64,7 @@ function GameGrid({
     setLiveOverSlot(null);
     liveFromSlot.current = null;
     if (!fromId || fromId === toId) return;
-    setLayout(prev => {
+    onLayoutChange(prev => {
       const n = { ...prev };
       [n[fromId], n[toId]] = [n[toId], n[fromId]];
       return n;
@@ -273,10 +82,10 @@ function GameGrid({
     setSettingsOpen(true);
   };
   const applySettings = () => {
-    setLayout({ ...draftLayout });
-    setVisible({ ...draftVisible });
-    setTheme(draftTheme);
-    setCustom({ ...draftCustom });
+    onLayoutChange({ ...draftLayout });
+    onVisibleChange({ ...draftVisible });
+    onThemeChange(draftTheme);
+    onCustomChange({ ...draftCustom });
     onEnabledStatsChange?.({ ...draftEnabledStats });
     setSettingsOpen(false);
   };

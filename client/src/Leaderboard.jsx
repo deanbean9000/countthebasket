@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import './Leaderboard.css';
 
-const STAT_TABS = [
+const BASE_TABS = [
   { key: 'ppg', label: 'PPG', full: 'Points Per Game',   emoji: '🔥' },
   { key: 'rpg', label: 'RPG', full: 'Rebounds Per Game', emoji: '💪' },
-  { key: 'apg', label: 'APG', full: 'Assists Per Game',  emoji: '🤝' },
-  { key: 'spg', label: 'SPG', full: 'Steals Per Game',   emoji: '🫳' },
-  { key: 'bpg', label: 'BPG', full: 'Blocks Per Game',   emoji: '✋' },
   { key: 'fpg', label: 'FPG', full: 'Fouls Per Game',    emoji: '🚨' },
+];
+const EXTRA_TABS = [
+  { key: 'apg', label: 'APG', full: 'Assists Per Game',  emoji: '🤝', statKey: 'totalAssists' },
+  { key: 'spg', label: 'SPG', full: 'Steals Per Game',   emoji: '🫳', statKey: 'totalSteals'  },
+  { key: 'bpg', label: 'BPG', full: 'Blocks Per Game',   emoji: '✋', statKey: 'totalBlocks'  },
 ];
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -56,6 +58,10 @@ function Leaderboard({ leagueId, leagueName, apiUrl, onBack }) {
     return sortDir === 'desc' ? bv - av : av - bv;
   });
 
+  const hasAssists = stats.some(p => (p.totalAssists ?? 0) > 0);
+  const hasSteals  = stats.some(p => (p.totalSteals  ?? 0) > 0);
+  const hasBlocks  = stats.some(p => (p.totalBlocks  ?? 0) > 0);
+
   // Top-5 leaders for the active stat tab
   const leaders = [...stats]
     .sort((a, b) => (b[activeTab] ?? 0) - (a[activeTab] ?? 0))
@@ -88,7 +94,10 @@ function Leaderboard({ leagueId, leagueName, apiUrl, onBack }) {
           {/* ── Leader Cards ─────────────────────────────────────────── */}
           <div className="lb-section">
             <div className="lb-tabs" role="tablist">
-              {STAT_TABS.map(tab => (
+              {[
+                ...BASE_TABS,
+                ...EXTRA_TABS.filter(t => stats.some(p => (p[t.statKey] ?? 0) > 0)),
+              ].map(tab => (
                 <button
                   key={tab.key}
                   role="tab"
@@ -147,24 +156,18 @@ function Leaderboard({ leagueId, leagueName, apiUrl, onBack }) {
                     <th className="lb-th-sortable" onClick={() => handleSort('rpg')}>
                       RPG <SortArrow col="rpg" />
                     </th>
-                    <th className="lb-th-sortable" onClick={() => handleSort('totalAssists')}>
-                      AST <SortArrow col="totalAssists" />
-                    </th>
-                    <th className="lb-th-sortable" onClick={() => handleSort('apg')}>
-                      APG <SortArrow col="apg" />
-                    </th>
-                    <th className="lb-th-sortable" onClick={() => handleSort('totalSteals')}>
-                      STL <SortArrow col="totalSteals" />
-                    </th>
-                    <th className="lb-th-sortable" onClick={() => handleSort('spg')}>
-                      SPG <SortArrow col="spg" />
-                    </th>
-                    <th className="lb-th-sortable" onClick={() => handleSort('totalBlocks')}>
-                      BLK <SortArrow col="totalBlocks" />
-                    </th>
-                    <th className="lb-th-sortable" onClick={() => handleSort('bpg')}>
-                      BPG <SortArrow col="bpg" />
-                    </th>
+                    {hasAssists && <>
+                      <th className="lb-th-sortable" onClick={() => handleSort('totalAssists')}>AST <SortArrow col="totalAssists" /></th>
+                      <th className="lb-th-sortable" onClick={() => handleSort('apg')}>APG <SortArrow col="apg" /></th>
+                    </>}
+                    {hasSteals && <>
+                      <th className="lb-th-sortable" onClick={() => handleSort('totalSteals')}>STL <SortArrow col="totalSteals" /></th>
+                      <th className="lb-th-sortable" onClick={() => handleSort('spg')}>SPG <SortArrow col="spg" /></th>
+                    </>}
+                    {hasBlocks && <>
+                      <th className="lb-th-sortable" onClick={() => handleSort('totalBlocks')}>BLK <SortArrow col="totalBlocks" /></th>
+                      <th className="lb-th-sortable" onClick={() => handleSort('bpg')}>BPG <SortArrow col="bpg" /></th>
+                    </>}
                     <th className="lb-th-sortable" onClick={() => handleSort('totalFouls')}>
                       FOULS <SortArrow col="totalFouls" />
                     </th>
@@ -185,12 +188,9 @@ function Leaderboard({ leagueId, leagueName, apiUrl, onBack }) {
                       <td className="lb-td-avg lb-td-pts">{(player.ppg ?? 0).toFixed(1)}</td>
                       <td>{player.totalRebounds}</td>
                       <td className="lb-td-avg">{(player.rpg ?? 0).toFixed(1)}</td>
-                      <td>{player.totalAssists ?? 0}</td>
-                      <td className="lb-td-avg">{(player.apg ?? 0).toFixed(1)}</td>
-                      <td>{player.totalSteals ?? 0}</td>
-                      <td className="lb-td-avg">{(player.spg ?? 0).toFixed(1)}</td>
-                      <td>{player.totalBlocks ?? 0}</td>
-                      <td className="lb-td-avg">{(player.bpg ?? 0).toFixed(1)}</td>
+                      {hasAssists && <><td>{player.totalAssists ?? 0}</td><td className="lb-td-avg">{(player.apg ?? 0).toFixed(1)}</td></>}
+                      {hasSteals  && <><td>{player.totalSteals  ?? 0}</td><td className="lb-td-avg">{(player.spg ?? 0).toFixed(1)}</td></>}
+                      {hasBlocks  && <><td>{player.totalBlocks  ?? 0}</td><td className="lb-td-avg">{(player.bpg ?? 0).toFixed(1)}</td></>}
                       <td>{player.totalFouls}</td>
                       <td className="lb-td-avg lb-td-fouls">{(player.fpg ?? 0).toFixed(1)}</td>
                       <td className="lb-td-offdef">

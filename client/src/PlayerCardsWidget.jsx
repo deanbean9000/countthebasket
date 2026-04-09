@@ -36,6 +36,15 @@ function PlayerCardsWidget({ homeTeamName, awayTeamName, homeStats, awayStats, p
                 <span className="stat-badge rebounds">
                   {player.rebounds} REB ({player.offensiveRebounds || 0}O/{player.defensiveRebounds || 0}D)
                 </span>
+                {(player.assists || 0) > 0 && (
+                  <span className="stat-badge">{player.assists} AST</span>
+                )}
+                {(player.steals || 0) > 0 && (
+                  <span className="stat-badge">{player.steals} STL</span>
+                )}
+                {(player.blocks || 0) > 0 && (
+                  <span className="stat-badge">{player.blocks} BLK</span>
+                )}
                 {fouls > 0 && (
                   <span className={`stat-badge fouls ${cls}`}>{label}</span>
                 )}

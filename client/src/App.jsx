@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import './App.css';
+import {
+  THEMES, DEFAULT_LAYOUT, DEFAULT_VISIBLE, DEFAULT_THEME, DEFAULT_CUSTOM,
+  buildCustomVars, STORAGE_KEY, loadSaved,
+} from './gameSettings';
 import Auth from './Auth';
 import LeagueGate from './LeagueGate';
 import Hero from './Hero';
@@ -33,6 +37,13 @@ function App() {
       return s ? JSON.parse(s) : { assists: false, steals: false, blocks: false };
     } catch { return { assists: false, steals: false, blocks: false }; }
   });
+
+  // ── Lifted game settings (shared with GameGrid + Hero) ────────────────────
+  const [layout,  setLayout]  = useState(() => loadSaved()?.layout  ?? DEFAULT_LAYOUT);
+  const [visible, setVisible] = useState(() => loadSaved()?.visible ?? DEFAULT_VISIBLE);
+  const [theme,   setTheme]   = useState(() => loadSaved()?.theme   ?? DEFAULT_THEME);
+  const [custom,  setCustom]  = useState(() => loadSaved()?.custom  ?? DEFAULT_CUSTOM);
+
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const inputRef = useRef(null);
@@ -44,6 +55,18 @@ function App() {
   useEffect(() => {
     localStorage.setItem('ctb_enabled_stats', JSON.stringify(enabledStats));
   }, [enabledStats]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout, visible, theme, custom }));
+  }, [layout, visible, theme, custom]);
+
+  useEffect(() => {
+    const vars = theme === 'custom'
+      ? buildCustomVars(custom)
+      : (THEMES[theme]?.vars ?? THEMES[DEFAULT_THEME].vars);
+    const root = document.documentElement;
+    Object.entries(vars).forEach(([prop, val]) => root.style.setProperty(prop, val));
+  }, [theme, custom]);
 
   // Build the action-step prompt based on which extra stats are on
   const buildActionPrompt = (player, teamLabel) => {
@@ -441,6 +464,10 @@ function App() {
       : awayTotals.points > homeTotals.points
       ? awayTeamName
       : null;
+    const allPlayers = [...homeP, ...awayP];
+    const showAssists = allPlayers.some(p => (p.assists || 0) > 0);
+    const showSteals  = allPlayers.some(p => (p.steals  || 0) > 0);
+    const showBlocks  = allPlayers.some(p => (p.blocks  || 0) > 0);
     return (
       <div className="app">
         <div className="summary-container">
@@ -472,6 +499,9 @@ function App() {
                       <th>Name</th>
                       <th>PTS</th>
                       <th>REB</th>
+                      {showAssists && <th>AST</th>}
+                      {showSteals  && <th>STL</th>}
+                      {showBlocks  && <th>BLK</th>}
                       <th>FOULS</th>
                     </tr>
                   </thead>
@@ -482,6 +512,9 @@ function App() {
                         <td>{p.name}</td>
                         <td>{p.points}</td>
                         <td>{p.rebounds} ({p.offensiveRebounds || 0}O/{p.defensiveRebounds || 0}D)</td>
+                        {showAssists && <td>{p.assists || 0}</td>}
+                        {showSteals  && <td>{p.steals  || 0}</td>}
+                        {showBlocks  && <td>{p.blocks  || 0}</td>}
                         <td>{p.fouls || 0}</td>
                       </tr>
                     ))}
@@ -536,6 +569,16 @@ function App() {
           onViewStandings={() => setView('standings')}
           onViewLeaderboard={() => setView('leaderboard')}
           onLeaveLeague={() => { setLeague(null); setView('leagueGate'); }}
+          enabledStats={enabledStats}
+          onEnabledStatsChange={setEnabledStats}
+          layout={layout}
+          visible={visible}
+          theme={theme}
+          custom={custom}
+          onLayoutChange={setLayout}
+          onVisibleChange={setVisible}
+          onThemeChange={setTheme}
+          onCustomChange={setCustom}
         />
       </>
     );
@@ -647,6 +690,14 @@ function App() {
         onUndo={undoLast}
         enabledStats={enabledStats}
         onEnabledStatsChange={setEnabledStats}
+        layout={layout}
+        visible={visible}
+        theme={theme}
+        custom={custom}
+        onLayoutChange={setLayout}
+        onVisibleChange={setVisible}
+        onThemeChange={setTheme}
+        onCustomChange={setCustom}
       />
     </div>
   );
