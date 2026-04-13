@@ -46,6 +46,7 @@ app.use(express.json());
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = [
+      'https://countthebasket.web.app',
       'https://countthebasket-28508.web.app',
       'https://countthebasket-28508.firebaseapp.com',
     ];
