@@ -49,6 +49,7 @@ app.use(cors({
       'https://countthebasket.web.app',
       'https://countthebasket-28508.web.app',
       'https://countthebasket-28508.firebaseapp.com',
+      'http://localhost:5173',
     ];
     // Allow requests with no origin (e.g. curl, Postman) and localhost/Codespaces dev origins
     if (!origin || allowed.includes(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin) || origin.includes('.app.github.dev')) {
